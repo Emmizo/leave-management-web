@@ -62,15 +62,17 @@ export const createLeave = createAsyncThunk(
   'leaves/createLeave',
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      // Send the FormData directly. Axios will set the Content-Type header.
-      const response = await api.post<LeaveCreationResponse>('/leaves', formData);
+      const response = await api.post('/leaves', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Important for file upload
+        },
+      });
       return response.data;
-    } catch (error: unknown) {
-      let errorMessage = 'Failed to create leave request';
-      if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data?.message || error.response.data?.error || errorMessage;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to create leave');
       }
-      return rejectWithValue(errorMessage);
+      return rejectWithValue('Failed to create leave');
     }
   }
 );

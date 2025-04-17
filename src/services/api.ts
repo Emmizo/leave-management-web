@@ -2,6 +2,11 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'http://localhost:5456/api', // Your API base URL
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: true // Important for CORS with credentials
 });
 
 // Interceptor to add the token to requests

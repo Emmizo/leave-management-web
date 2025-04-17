@@ -1,47 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, FormEvent, ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../context/store';
-import { createLeave, resetCreationStatus } from '../context/leaveSlice';
-import { Leave } from '../types/auth';
+import { createLeave } from '../context/leaveSlice';
+import { Alert, Card, Form, Button, Row, Col } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+
+interface LeaveFormData {
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+}
+
+const initialFormData: LeaveFormData = {
+  leaveType: '',
+  startDate: '',
+  endDate: '',
+  reason: ''
+};
 
 const LeaveApplication = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { status, error } = useSelector((state: RootState) => state.leaves);
   const { user } = useSelector((state: RootState) => state.auth);
-  const { creationStatus, creationError, lastCreatedLeave } = useSelector((state: RootState) => state.leaves);
 
-  const [formData, setFormData] = useState({
-    leaveType: '' as Leave['type'] | '',
-    startDate: '',
-    endDate: '',
-    duration: 'full',
-    reason: '',
-    documents: null as File | null,
-  });
+  const [formData, setFormData] = useState<LeaveFormData>(initialFormData);
+  const [file, setFile] = useState<File | null>(null);
 
-  const leaveTypes: { id: Leave['type']; name: string }[] = [
-    { id: 'PTO', name: 'Personal Time Off (PTO)' },
-    { id: 'SICK', name: 'Sick Leave' },
-    { id: 'COMPASSIONATE', name: 'Compassionate Leave' },
-    { id: 'MATERNITY', name: 'Maternity Leave' },
-    { id: 'UNPAID', name: 'Unpaid Leave' },
-  ];
-
-  useEffect(() => {
-    dispatch(resetCreationStatus());
-    return () => {
-        dispatch(resetCreationStatus());
-    };
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (creationStatus === 'succeeded') {
-      navigate('/leave-history');
-    }
-  }, [creationStatus, navigate]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -49,151 +37,192 @@ const LeaveApplication = () => {
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({
-        ...prev,
-        documents: e.target.files![0]
-      }));
+      setFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user || !formData.leaveType) {
-      console.error('User not logged in or leave type not selected');
-      return;
+    
+    try {
+      const formDataToSend = new FormData();
+      
+      // Create the leaveRequest object
+      const leaveRequest = {
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        reason: formData.reason,
+        type: formData.leaveType,
+        employeeId: user?.id || 0
+      };
+
+      // Append leaveRequest as a blob with application/json type
+      formDataToSend.append('leaveRequest', new Blob([JSON.stringify(leaveRequest)], {
+        type: 'application/json'
+      }));
+
+      // Append document if exists
+      if (file) {
+        formDataToSend.append('document', file);
+      }
+
+      await dispatch(createLeave(formDataToSend)).unwrap();
+      
+      // Show success message
+      toast.success('Leave request submitted successfully!');
+      
+      // Reset form
+      setFormData(initialFormData);
+      setFile(null);
+      
+      // Reset file input
+      const fileInput = document.getElementById('documents') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+      // Redirect to dashboard
+      navigate('/dashboard');
+      
+    } catch (err) {
+      console.error('Failed to create leave:', err);
+      toast.error('Failed to submit leave request. Please try again.');
     }
-
-    // 1. Create the leave details object (excluding file and employeeId)
-    const leaveDetails = {
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      reason: formData.reason,
-      type: formData.leaveType,
-      // employeeId might be inferred by backend from token, 
-      // or added here if needed by backend logic within leaveRequest part
-      // employeeId: user.id 
-    };
-
-    // 2. Create FormData
-    const submissionData = new FormData();
-
-    // 3. Append JSON data as a Blob
-    submissionData.append('leaveRequest', new Blob([JSON.stringify(leaveDetails)], {
-      type: 'application/json'
-    }));
-
-    // 4. Append the file if it exists
-    if (formData.documents) {
-      submissionData.append('document', formData.documents, formData.documents.name);
-    }
-
-    // 5. Dispatch the thunk with FormData
-    // The thunk and Axios will handle sending this correctly
-    // The Axios interceptor will add the Authorization token
-    dispatch(createLeave(submissionData));
   };
+
+  const isLoading = status === 'loading';
 
   return (
-    <div className="container">
-      <h2 className="mb-4">Apply for Leave</h2>
-      
-      {creationStatus === 'succeeded' && lastCreatedLeave && (
-        <div className="alert alert-success" role="alert">
-          Leave request created successfully! Redirecting...
-        </div>
-      )}
+    <Card className="shadow-sm">
+      <Card.Body>
+        <h4 className="mb-4" style={{ color: '#184C55' }}>Apply for Leave</h4>
+        
+        {error && (
+          <Alert variant="danger" className="mb-4">
+            {error}
+          </Alert>
+        )}
 
-      {creationStatus === 'failed' && creationError && (
-        <div className="alert alert-danger" role="alert">
-          Error creating leave: {creationError}
-        </div>
-      )}
+        <Form onSubmit={handleSubmit}>
+          <fieldset disabled={isLoading}>
+            <Row>
+              <Col md={6} className="mb-3">
+                <Form.Label htmlFor="leaveType">Leave Type</Form.Label>
+                <Form.Select
+                  id="leaveType"
+                  name="leaveType"
+                  value={formData.leaveType}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select leave type</option>
+                  <option value="PTO">Personal Time Off (PTO)</option>
+                  <option value="SICK">Sick Leave</option>
+                  <option value="COMPASSIONATE">Compassionate Leave</option>
+                  <option value="MATERNITY">Maternity Leave</option>
+                  <option value="UNPAID">Unpaid Leave</option>
+                </Form.Select>
+              </Col>
 
-      <div className="card">
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <fieldset disabled={creationStatus === 'loading'}>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="leaveType" className="form-label">Leave Type</label>
-                  <select
-                    className="form-select"
-                    id="leaveType"
-                    name="leaveType"
-                    value={formData.leaveType}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select leave type</option>
-                    {leaveTypes.map(type => (
-                      <option key={type.id} value={type.id}>{type.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <Col md={6} className="mb-3">
+                <Form.Label htmlFor="startDate">Start Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  id="startDate"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Col>
 
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="startDate" className="form-label">Start Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="startDate"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <Col md={6} className="mb-3">
+                <Form.Label htmlFor="endDate">End Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  id="endDate"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Col>
 
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="endDate" className="form-label">End Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="endDate"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <Col xs={12} className="mb-3">
+                <Form.Label htmlFor="reason">Reason</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  id="reason"
+                  name="reason"
+                  rows={3}
+                  value={formData.reason}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Col>
 
-                <div className="col-12 mb-3">
-                  <label htmlFor="reason" className="form-label">Reason</label>
-                  <textarea
-                    className="form-control"
-                    id="reason"
-                    name="reason"
-                    rows={3}
-                    value={formData.reason}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <Col xs={12} className="mb-3">
+                <Form.Label htmlFor="documents">
+                  Supporting Document <span className="text-muted">(Optional)</span>
+                </Form.Label>
+                <Form.Control
+                  type="file"
+                  id="documents"
+                  onChange={handleFileChange}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  aria-describedby="documentHelp"
+                />
+                <Form.Text id="documentHelp" className="text-muted d-flex align-items-center mt-1">
+                  <i className="fas fa-info-circle me-1"></i>
+                  Optional: Upload medical certificates or other supporting documents.
+                  <br />
+                  Accepted formats: PDF, DOC, DOCX, JPG, PNG
+                </Form.Text>
+                {file && (
+                  <div className="mt-2 d-flex align-items-center">
+                    <span className="text-success me-2">
+                      <i className="fas fa-check-circle"></i> File selected: {file.name}
+                    </span>
+                    <Button
+                      variant="link"
+                      className="p-0 text-danger"
+                      onClick={() => {
+                        setFile(null);
+                        const fileInput = document.getElementById('documents') as HTMLInputElement;
+                        if (fileInput) fileInput.value = '';
+                      }}
+                    >
+                      <i className="fas fa-times"></i>
+                    </Button>
+                  </div>
+                )}
+              </Col>
 
-                <div className="col-12 mb-3">
-                  <label htmlFor="documents" className="form-label">Supporting Document (Optional)</label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    id="documents"
-                    onChange={handleFileChange}
-                  />
-                  <small className="text-muted">Upload medical certificates or other supporting documents if required.</small>
-                </div>
-
-                <div className="col-12">
-                  <button type="submit" className="btn btn-primary">
-                    {creationStatus === 'loading' ? 'Submitting...' : 'Submit Application'}
-                  </button>
-                </div>
-              </div>
-            </fieldset>
-          </form>
-        </div>
-      </div>
-    </div>
+              <Col xs={12}>
+                <Button 
+                  type="submit" 
+                  variant="primary"
+                  disabled={isLoading}
+                  style={{
+                    backgroundColor: '#184C55',
+                    borderColor: '#184C55'
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Application'
+                  )}
+                </Button>
+              </Col>
+            </Row>
+          </fieldset>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 };
 

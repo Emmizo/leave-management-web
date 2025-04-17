@@ -174,7 +174,9 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <Button variant="outline-secondary" onClick={handleClose} disabled={registrationStatus === 'loading'}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={registrationStatus === 'loading' || registrationStatus === 'succeeded'}>
+          <Button type="submit" variant="primary" disabled={registrationStatus === 'loading' || registrationStatus === 'succeeded'}
+          style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+          >
             {registrationStatus === 'loading' ? (
               <>
                 <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-1" />

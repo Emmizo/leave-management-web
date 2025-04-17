@@ -163,6 +163,7 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
             type="submit" 
             variant="primary" 
             disabled={status === 'loading'}
+            style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
           >
             {status === 'loading' ? (
               <>

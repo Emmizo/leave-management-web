@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaUserFriends, FaCalendarAlt, FaPlus, FaUserClock, FaCheck, FaTimes, FaEye } from 'react-icons/fa';
+import { FaUserFriends, FaCalendarAlt, FaPlus, FaUserClock, FaCheck, FaTimes, FaEye, FaFileAlt, FaDownload } from 'react-icons/fa';
 import { Button, Badge, Modal, Form, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../context/store';
@@ -8,6 +8,21 @@ import { fetchAllLeaveHistory, updateLeaveStatus, fetchLeaveBalances } from '../
 import { fetchHolidays, Holiday } from '../context/holidaySlice';
 import RegisterEmployeeModal from '../components/dashboard/RegisterEmployeeModal';
 import CreateHolidayModal from '../components/dashboard/CreateHolidayModal';
+
+interface LeaveDetails {
+  id: number;
+  status: string;
+  rejectionReason?: string;
+  documentUrl?: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  employee?: {
+    firstName: string;
+    lastName: string;
+  };
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +43,7 @@ const Dashboard = () => {
   const [selectedHoliday] = useState<Holiday | null>(null);
   const [selectedLeave, setSelectedLeave] = useState<{ id: number; action: 'approve' | 'reject' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [selectedLeaveDetails, setSelectedLeaveDetails] = useState<{ id: number; status: string; rejectionReason?: string } | null>(null);
+  const [selectedLeaveDetails, setSelectedLeaveDetails] = useState<LeaveDetails | null>(null);
 
   useEffect(() => {
     dispatch(fetchAllLeaveHistory());
@@ -80,12 +95,20 @@ const Dashboard = () => {
     dispatch(fetchAllLeaveHistory());
   };
 
-  const handleViewDetails = (leave: { id: number; status: string; rejectionReason?: string }) => {
+  const handleViewDetails = (leave: LeaveDetails) => {
     setSelectedLeaveDetails(leave);
   };
 
   const handleCloseDetails = () => {
     setSelectedLeaveDetails(null);
+  };
+
+  const handleDownloadDocument = async (documentUrl: string) => {
+    try {
+      window.open(documentUrl, '_blank');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+    }
   };
 
   const isAdminOrHR = currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER';
@@ -114,14 +137,20 @@ const Dashboard = () => {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Dashboard</h2>
+        <h2 style={{ color: '#184C55' }}>Dashboard</h2>
         {isAdminOrHR && (
           <div className="d-flex gap-2">
-            <Button variant="primary" onClick={openRegisterModal}>
+            <Button 
+              onClick={openRegisterModal}
+              style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+            >
               <FaPlus className="me-2" />
               Register Employee
             </Button>
-            <Button variant="success" onClick={openHolidayModal}>
+            <Button 
+              variant="success" 
+              onClick={openHolidayModal}
+            >
               <FaCalendarAlt className="me-2" />
               Add Holiday
             </Button>
@@ -132,7 +161,7 @@ const Dashboard = () => {
       <div className="row mb-4">
         {fetchBalancesStatus === 'loading' ? (
           <div className="col-12 text-center">
-            <Spinner animation="border" role="status">
+            <Spinner animation="border" role="status" style={{ color: '#184C55' }}>
               <span className="visually-hidden">Loading leave balances...</span>
             </Spinner>
           </div>
@@ -170,7 +199,7 @@ const Dashboard = () => {
         <div className="col-md-8">
           <div className="card shadow-sm">
             <div className="card-header">
-              <h5 className="mb-0">{activityIcon}{activityTitle}</h5>
+              <h5 className="mb-0" style={{ color: '#184C55' }}>{activityIcon}{activityTitle}</h5>
             </div>
             <div className="card-body">
               {fetchHistoryStatus === 'loading' && <div>Loading leave data...</div>}
@@ -225,9 +254,13 @@ const Dashboard = () => {
                                 </>
                               ) : (
                                 <Button
-                                  variant="outline-primary"
                                   size="sm"
                                   onClick={() => handleViewDetails(leave)}
+                                  style={{ 
+                                    color: '#184C55', 
+                                    borderColor: '#184C55',
+                                    backgroundColor: 'transparent'
+                                  }}
                                 >
                                   <FaEye />
                                 </Button>
@@ -253,7 +286,7 @@ const Dashboard = () => {
         <div className="col-md-4">
           <div className="card shadow-sm">
             <div className="card-header d-flex justify-content-between align-items-center">
-              <h6 className="mb-0"><FaCalendarAlt className="me-2" />Upcoming Holidays</h6>
+              <h6 className="mb-0" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Upcoming Holidays</h6>
               <div className="d-flex gap-2">
                 {isAdminOrHR && (
                   <Button variant="outline-success" size="sm" onClick={openHolidayModal} className="me-2">
@@ -262,9 +295,13 @@ const Dashboard = () => {
                   </Button>
                 )}
                 <Button 
-                  variant="outline-primary" 
                   size="sm"
                   onClick={() => navigate('/holidays')}
+                  style={{ 
+                    color: '#184C55', 
+                    borderColor: '#184C55',
+                    backgroundColor: 'transparent'
+                  }}
                 >
                   {/* <FaCalendarAlt className="me-1" /> */}
                   View All
@@ -317,7 +354,7 @@ const Dashboard = () => {
 
       {/* Leave Status Update Modal */}
       <Modal show={!!selectedLeave} onHide={() => setSelectedLeave(null)} centered>
-        <Modal.Header closeButton>
+        <Modal.Header closeButton style={{ backgroundColor: '#184C55', color: '#FFFFFF' }}>
           <Modal.Title>
             {selectedLeave?.action === 'approve' ? 'Approve Leave Request' : 'Reject Leave Request'}
           </Modal.Title>
@@ -341,13 +378,14 @@ const Dashboard = () => {
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setSelectedLeave(null)}>
+          <Button variant="outline-secondary" onClick={() => setSelectedLeave(null)}>
             Cancel
           </Button>
           <Button
             variant={selectedLeave?.action === 'approve' ? 'success' : 'danger'}
             onClick={handleConfirmAction}
             disabled={selectedLeave?.action === 'reject' && !rejectionReason}
+            style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
           >
             {selectedLeave?.action === 'approve' ? 'Approve' : 'Reject'}
           </Button>
@@ -355,21 +393,73 @@ const Dashboard = () => {
       </Modal>
 
       {/* Leave Details Modal */}
-      <Modal show={!!selectedLeaveDetails} onHide={handleCloseDetails} centered>
-        <Modal.Header closeButton>
+      <Modal show={!!selectedLeaveDetails} onHide={handleCloseDetails} centered size="lg">
+        <Modal.Header closeButton style={{ backgroundColor: '#184C55', color: '#FFFFFF' }}>
           <Modal.Title>Leave Request Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedLeaveDetails?.status === 'REJECTED' && (
-            <div className="mb-3">
-              <h6 className="text-danger">Rejection Reason:</h6>
-              <p className="mb-0">{selectedLeaveDetails.rejectionReason || 'No reason provided'}</p>
-            </div>
-          )}
-          {selectedLeaveDetails?.status === 'APPROVED' && (
-            <div className="mb-3">
-              <h6 className="text-success">Leave Request Approved</h6>
-              <p className="mb-0">Your leave request has been approved.</p>
+          {selectedLeaveDetails && (
+            <div className="p-2">
+              {isAdminOrHR && selectedLeaveDetails.employee && (
+                <div className="mb-3">
+                  <h6 className="text-muted">Employee</h6>
+                  <p className="mb-0">{`${selectedLeaveDetails.employee.firstName} ${selectedLeaveDetails.employee.lastName}`}</p>
+                </div>
+              )}
+              
+              <div className="mb-3">
+                <h6 className="text-muted">Leave Type</h6>
+                <p className="mb-0">{selectedLeaveDetails.type}</p>
+              </div>
+
+              <div className="row mb-3">
+                <div className="col-md-6">
+                  <h6 className="text-muted">Start Date</h6>
+                  <p className="mb-0">{formatDate(selectedLeaveDetails.startDate)}</p>
+                </div>
+                <div className="col-md-6">
+                  <h6 className="text-muted">End Date</h6>
+                  <p className="mb-0">{formatDate(selectedLeaveDetails.endDate)}</p>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <h6 className="text-muted">Reason</h6>
+                <p className="mb-0">{selectedLeaveDetails.reason}</p>
+              </div>
+
+              <div className="mb-3">
+                <h6 className="text-muted">Status</h6>
+                <Badge bg={selectedLeaveDetails.status === 'APPROVED' ? 'success' : 
+                         selectedLeaveDetails.status === 'PENDING' ? 'warning' : 'danger'}>
+                  {selectedLeaveDetails.status}
+                </Badge>
+              </div>
+
+              {selectedLeaveDetails.status === 'REJECTED' && selectedLeaveDetails.rejectionReason && (
+                <div className="mb-3">
+                  <h6 className="text-danger">Rejection Reason</h6>
+                  <p className="mb-0">{selectedLeaveDetails.rejectionReason}</p>
+                </div>
+              )}
+
+              {selectedLeaveDetails.documentUrl && (
+                <div className="mb-3">
+                  <h6 className="text-muted">Supporting Document</h6>
+                  <Button
+                    size="sm"
+                    onClick={() => handleDownloadDocument(selectedLeaveDetails.documentUrl!)}
+                    className="d-flex align-items-center gap-2"
+                    style={{ 
+                      color: '#184C55', 
+                      borderColor: '#184C55',
+                      backgroundColor: 'transparent'
+                    }}
+                  >
+                    <FaFileAlt /> View Document <FaDownload className="ms-1" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Modal.Body>

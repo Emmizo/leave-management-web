@@ -46,6 +46,25 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// Async Thunk for Microsoft Login
+export const loginWithMicrosoft = createAsyncThunk(
+  'auth/loginWithMicrosoft',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Redirect to Microsoft OAuth endpoint
+      window.location.href = `${process.env.REACT_APP_API_URL}/auth/microsoft`;
+      // Note: The actual login will happen on the backend after redirect
+      return null;
+    } catch (error: unknown) {
+      let errorMessage = 'Microsoft login failed';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 // Async Thunk for Fetching User Profile (/me)
 export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
@@ -99,6 +118,19 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
         state.isAuthenticated = false;
+        state.error = action.payload as string;
+      })
+      // Microsoft Login Reducers
+      .addCase(loginWithMicrosoft.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(loginWithMicrosoft.fulfilled, (state) => {
+        state.status = 'succeeded';
+        // The actual authentication will happen after redirect
+      })
+      .addCase(loginWithMicrosoft.rejected, (state, action) => {
+        state.status = 'failed';
         state.error = action.payload as string;
       })
       // Fetch User Profile Reducers

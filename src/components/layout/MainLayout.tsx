@@ -4,6 +4,7 @@ import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars } from '
 import { useDispatch } from 'react-redux';
 import { logout } from '../../context/authSlice';
 import { AppDispatch } from '../../context/store';
+import './MainLayout.css';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,10 +26,22 @@ const MainLayout = () => {
   return (
     <div className="d-flex">
       {/* Sidebar */}
-      <div className={`bg-dark text-white ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} style={{ width: sidebarOpen ? '250px' : '70px', minHeight: '100vh', transition: 'all 0.3s' }}>
+      <div 
+        className={`text-white sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} 
+        style={{ 
+          width: sidebarOpen ? '250px' : '70px', 
+          minHeight: '100vh', 
+          transition: 'all 0.3s',
+          backgroundColor: '#184C55'
+        }}
+      >
         <div className="p-3 d-flex justify-content-between align-items-center">
           {sidebarOpen && <h5 className="mb-0">Africa HR</h5>}
-          <button className="btn btn-link text-white" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <button 
+            className="btn btn-link text-white" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{ color: '#FFFFFF' }}
+          >
             <FaBars />
           </button>
         </div>
@@ -37,7 +50,17 @@ const MainLayout = () => {
             <li className="nav-item" key={item.path}>
               <Link
                 to={item.path}
-                className={`nav-link text-white d-flex align-items-center ${location.pathname === item.path ? 'active bg-primary' : ''}`}
+                className={`nav-link d-flex align-items-center sidebar-link ${
+                  location.pathname === item.path 
+                    ? 'active' 
+                    : ''
+                }`}
+                style={{
+                  color: '#FFFFFF',
+                  backgroundColor: location.pathname === item.path 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : 'transparent'
+                }}
               >
                 <span className="me-2">{item.icon}</span>
                 {sidebarOpen && <span>{item.label}</span>}
@@ -46,8 +69,12 @@ const MainLayout = () => {
           ))}
           <li className="nav-item mt-auto mb-3">
             <button
-              className="nav-link text-white d-flex align-items-center w-100 border-0 bg-transparent"
+              className="nav-link d-flex align-items-center w-100 border-0 sidebar-link"
               onClick={handleLogout}
+              style={{
+                color: '#FFFFFF',
+                backgroundColor: 'transparent'
+              }}
             >
               <span className="me-2"><FaSignOutAlt /></span>
               {sidebarOpen && <span>Logout</span>}

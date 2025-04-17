@@ -50,14 +50,15 @@ const Profile = () => {
 
   return (
     <div className="container">
-      <h2 className="mb-4">Profile</h2>
+      <h2 className="mb-4" style={{ color: '#184C55' }}>Profile</h2>
 
       <div className="row">
         <div className="col-md-4">
           <div className="card mb-4">
             <div className="card-body text-center">
               <div className="mb-3">
-                <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" style={{ width: '100px', height: '100px' }}>
+                <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                     style={{ width: '100px', height: '100px', backgroundColor: '#184C55', color: '#FFFFFF' }}>
                   <FaUser size={40} />
                 </div>
               </div>
@@ -94,14 +95,20 @@ const Profile = () => {
                       onChange={handleInputChange}
                     />
                   </div>
-                  <button type="submit" className="btn btn-primary me-2" disabled>Save</button>
+                  <button type="submit" className="btn me-2" style={{ backgroundColor: '#184C55', color: '#FFFFFF' }} disabled>Save</button>
                   <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
                 </form>
               ) : (
                 <>
                   <h4>{`${user.firstName} ${user.lastName}`}</h4>
                   <p className="text-muted">{user.position}</p>
-                  <button className="btn btn-primary" onClick={() => setIsEditing(true)}>Edit Profile</button>
+                  <button 
+                    className="btn" 
+                    onClick={() => setIsEditing(true)}
+                    style={{ backgroundColor: '#184C55', color: '#FFFFFF' }}
+                  >
+                    Edit Profile
+                  </button>
                 </>
               )}
             </div>
@@ -109,22 +116,22 @@ const Profile = () => {
 
           <div className="card">
             <div className="card-body">
-              <h5 className="card-title mb-3">Contact Information</h5>
+              <h5 className="card-title mb-3" style={{ color: '#184C55' }}>Contact Information</h5>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <FaEnvelope className="me-2 text-primary" />
+                  <FaEnvelope className="me-2" style={{ color: '#184C55' }} />
                   {user.email}
                 </li>
                 <li className="mb-2">
-                  <FaPhone className="me-2 text-primary" />
+                  <FaPhone className="me-2" style={{ color: '#184C55' }} />
                   (Not Provided)
                 </li>
                 <li className="mb-2">
-                  <FaBuilding className="me-2 text-primary" />
+                  <FaBuilding className="me-2" style={{ color: '#184C55' }} />
                   {user.department}
                 </li>
                 <li>
-                  <FaCalendarAlt className="me-2 text-primary" />
+                  <FaCalendarAlt className="me-2" style={{ color: '#184C55' }} />
                   Joined: (Not Provided)
                 </li>
               </ul>
@@ -135,11 +142,11 @@ const Profile = () => {
         <div className="col-md-8">
           <div className="card">
             <div className="card-body">
-              <h5 className="card-title mb-4">Leave Statistics</h5>
+              <h5 className="card-title mb-4" style={{ color: '#184C55' }}>Leave Statistics</h5>
               
               {fetchBalancesStatus === 'loading' && (
                 <div className="text-center py-4">
-                  <div className="spinner-border text-primary" role="status">
+                  <div className="spinner-border" style={{ color: '#184C55' }} role="status">
                     <span className="visually-hidden">Loading...</span>
                   </div>
                 </div>
