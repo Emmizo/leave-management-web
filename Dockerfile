@@ -1,11 +1,14 @@
-# Stage 1: Build the React application
-FROM node:18-alpine AS build
+# Build stage
+FROM node:18-alpine as build
 
+# Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package.json package-lock.json* ./
-RUN npm install --frozen-lockfile
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
@@ -13,19 +16,20 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Stage 2: Serve the application using a lightweight web server
+# Production stage
 FROM node:18-alpine
 
-WORKDIR /app
-
-# Install a simple static server
+# Install serve
 RUN npm install -g serve
 
-# Copy the build output from the build stage
+# Set working directory
+WORKDIR /app
+
+# Copy build files from build stage
 COPY --from=build /app/dist ./dist
 
-# Expose the port the app runs on (default for serve is 3000)
+# Expose port 3000
 EXPOSE 3000
 
-# Command to serve the build directory
+# Start the application
 CMD ["serve", "-s", "dist", "-l", "3000"] 

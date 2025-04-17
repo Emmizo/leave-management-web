@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './authSlice';
 import leaveReducer from './leaveSlice';
+import holidayReducer from './holidaySlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     leaves: leaveReducer,
+    holidays: holidayReducer,
   },
 });
 

@@ -5,26 +5,34 @@ import { LeaveCreationResponse, AllEmployeesResponse } from '../types/leave';
 import { Employee, Leave } from '../types/auth'; // Ensure Leave is imported
 import axios from 'axios';
 import { RegisterEmployeePayload } from '../types/employee'; // Import new type
+import { RootState } from './store'; // Import RootState
 
-interface LeaveState {
-  // State for leave creation
+export interface LeaveBalance {
+  leaveType: string;
+  name: string;
+  daysAvailable: number;
+  daysAllowed: number;
+  status: string;
+  colorCode: string;
+}
+
+export interface LeaveState {
   creationStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   creationError: string | null;
   lastCreatedLeave: LeaveCreationResponse | null;
-
-  // State for fetching leaves/employees (can be expanded)
   employees: Employee[];
   fetchEmployeesStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   fetchEmployeesError: string | null;
-
-  // State for fetching all leave history
   allHistory: Leave[];
   fetchHistoryStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   fetchHistoryError: string | null;
-
-  // State for employee registration
   registrationStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   registrationError: string | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
+  balances: LeaveBalance[];
+  fetchBalancesStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  fetchBalancesError: string | null;
 }
 
 const initialState: LeaveState = {
@@ -41,6 +49,12 @@ const initialState: LeaveState = {
   // Initialize registration state
   registrationStatus: 'idle',
   registrationError: null,
+  // Initialize status state
+  status: 'idle',
+  error: null,
+  balances: [],
+  fetchBalancesStatus: 'idle',
+  fetchBalancesError: null,
 };
 
 // Async Thunk for Creating Leave
@@ -114,6 +128,51 @@ export const registerEmployee = createAsyncThunk(
   }
 );
 
+// Update leave status (approve/reject)
+export const updateLeaveStatus = createAsyncThunk(
+  'leaves/updateLeaveStatus',
+  async ({ leaveId, status, rejectionReason }: { leaveId: number; status: 'APPROVED' | 'REJECTED'; rejectionReason?: string }, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const userRole = state.auth.user?.user?.role;
+    
+    if (userRole !== 'ADMIN' && userRole !== 'HR_MANAGER') {
+      return rejectWithValue('You do not have permission to update leave status');
+    }
+
+    try {
+      const response = await api.put(`/leaves/${leaveId}/status`, {
+        leaveId,
+        status,
+        rejectionReason: status === 'REJECTED' ? rejectionReason : undefined
+      });
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to update leave status';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Async Thunk for Fetching Leave Balances
+export const fetchLeaveBalances = createAsyncThunk(
+  'leaves/fetchBalances',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<LeaveBalance[]>('/leaves/balances');
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to fetch leave balances';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const leaveSlice = createSlice({
   name: 'leaves',
   initialState,
@@ -128,6 +187,10 @@ const leaveSlice = createSlice({
     resetRegistrationStatus: (state) => {
       state.registrationStatus = 'idle';
       state.registrationError = null;
+    },
+    resetLeaveStatus: (state) => {
+      state.status = 'idle';
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -185,9 +248,39 @@ const leaveSlice = createSlice({
       .addCase(registerEmployee.rejected, (state, action) => {
         state.registrationStatus = 'failed';
         state.registrationError = action.payload as string;
+      })
+      // Update leave status
+      .addCase(updateLeaveStatus.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(updateLeaveStatus.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        // Update the leave in allHistory if it exists
+        const index = state.allHistory.findIndex(leave => leave.id === action.payload.id);
+        if (index !== -1) {
+          state.allHistory[index] = action.payload;
+        }
+      })
+      .addCase(updateLeaveStatus.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to update leave status';
+      })
+      // Add leave balances reducers
+      .addCase(fetchLeaveBalances.pending, (state) => {
+        state.fetchBalancesStatus = 'loading';
+        state.fetchBalancesError = null;
+      })
+      .addCase(fetchLeaveBalances.fulfilled, (state, action: PayloadAction<LeaveBalance[]>) => {
+        state.fetchBalancesStatus = 'succeeded';
+        state.balances = action.payload;
+      })
+      .addCase(fetchLeaveBalances.rejected, (state, action) => {
+        state.fetchBalancesStatus = 'failed';
+        state.fetchBalancesError = action.payload as string;
       });
   },
 });
 
-export const { resetCreationStatus, resetRegistrationStatus } = leaveSlice.actions;
+export const { resetCreationStatus, resetRegistrationStatus, resetLeaveStatus } = leaveSlice.actions;
 export default leaveSlice.reducer; 

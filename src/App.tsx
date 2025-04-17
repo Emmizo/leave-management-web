@@ -16,6 +16,7 @@ import LeaveHistory from './pages/LeaveHistory';
 import TeamCalendar from './pages/TeamCalendar';
 import Profile from './pages/Profile';
 import Unauthorized from './pages/Unauthorized'; // Import Unauthorized page
+import Holidays from './pages/Holidays';
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
@@ -95,6 +96,7 @@ function App() {
           <Route path="leave-history" element={<LeaveHistory />} />
           <Route path="team-calendar" element={<TeamCalendar />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="holidays" element={<Holidays />} />
           {/* Add other nested routes here */}
         </Route>
 

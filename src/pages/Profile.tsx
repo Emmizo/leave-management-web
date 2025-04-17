@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaCalendarAlt } from 'react-icons/fa';
-import { RootState } from '../context/store';
+import { RootState, AppDispatch } from '../context/store';
+import { fetchLeaveBalances } from '../context/leaveSlice';
 
 const Profile = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { user, status } = useSelector((state: RootState) => state.auth);
+  const { balances, fetchBalancesStatus, fetchBalancesError } = useSelector((state: RootState) => state.leaves);
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,6 +26,10 @@ const Profile = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    dispatch(fetchLeaveBalances());
+  }, [dispatch]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -40,13 +47,6 @@ const Profile = () => {
   if (status === 'loading' || !user) {
     return <div>Loading profile...</div>;
   }
-
-  const leaveStats = {
-    annual: { total: 20, used: 20 - user.annualLeaveBalance, remaining: user.annualLeaveBalance },
-    sick: { total: 10, used: 0, remaining: 10 },
-    compassionate: { total: 5, used: 0, remaining: 5 },
-    maternity: { total: 90, used: 0, remaining: 90 },
-  };
 
   return (
     <div className="container">
@@ -136,32 +136,52 @@ const Profile = () => {
           <div className="card">
             <div className="card-body">
               <h5 className="card-title mb-4">Leave Statistics</h5>
-              <div className="row">
-                {Object.entries(leaveStats).map(([type, stats]) => (
-                  <div key={type} className="col-md-6 mb-4">
-                    <div className="card bg-light">
-                      <div className="card-body">
-                        <h6 className="card-title text-capitalize">{type} Leave</h6>
-                        <div className="progress mb-2" style={{height: '10px'}}>
-                          <div
-                            className={`progress-bar ${stats.used > 0 ? 'bg-primary' : 'bg-success'}`}
-                            role="progressbar"
-                            style={{ width: `${(stats.used / (stats.total || 1)) * 100}%` }}
-                            aria-valuenow={stats.used}
-                            aria-valuemin={0}
-                            aria-valuemax={stats.total}
-                          />
+              
+              {fetchBalancesStatus === 'loading' && (
+                <div className="text-center py-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              )}
+              
+              {fetchBalancesError && (
+                <div className="alert alert-danger">
+                  Error loading leave balances: {fetchBalancesError}
+                </div>
+              )}
+              
+              {fetchBalancesStatus === 'succeeded' && (
+                <div className="row">
+                  {balances.map((balance) => (
+                    <div key={balance.leaveType} className="col-md-6 mb-4">
+                      <div className="card" style={{ borderLeft: `4px solid ${balance.colorCode}` }}>
+                        <div className="card-body">
+                          <h6 className="card-title">{balance.name}</h6>
+                          <div className="progress mb-2" style={{height: '10px'}}>
+                            <div
+                              className="progress-bar"
+                              role="progressbar"
+                              style={{ 
+                                width: `${((balance.daysAllowed - balance.daysAvailable) / balance.daysAllowed) * 100}%`,
+                                backgroundColor: balance.colorCode
+                              }}
+                              aria-valuenow={balance.daysAllowed - balance.daysAvailable}
+                              aria-valuemin={0}
+                              aria-valuemax={balance.daysAllowed}
+                            />
+                          </div>
+                          <div className="d-flex justify-content-between">
+                            <small>Used: {balance.daysAllowed - balance.daysAvailable} days</small>
+                            <small>Remaining: {balance.daysAvailable} days</small>
+                          </div>
+                          <small className="text-muted">Total: {balance.daysAllowed} days</small>
                         </div>
-                        <div className="d-flex justify-content-between">
-                          <small>Used: {stats.used} days</small>
-                          <small>Remaining: {stats.remaining} days</small>
-                        </div>
-                        <small className="text-muted">Total: {stats.total} days</small>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

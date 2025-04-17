@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  # Frontend React application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    # If you have a backend API, you can add it here
+    # depends_on:
+    #   - backend 
