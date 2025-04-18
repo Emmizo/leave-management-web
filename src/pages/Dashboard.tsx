@@ -18,7 +18,10 @@ interface LeaveDetails {
   startDate: string;
   endDate: string;
   reason: string;
+  leaveDuration: 'FULL_DAY' | 'HALF_DAY';
+  numberOfDays: number;
   employee?: {
+    id: number;
     firstName: string;
     lastName: string;
   };
@@ -51,11 +54,30 @@ const Dashboard = () => {
     dispatch(fetchHolidays());
   }, [dispatch]);
 
+  const calculateDaysTaken = (startDate: string, endDate: string, duration: 'FULL_DAY' | 'HALF_DAY') => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // If dates are the same, return 1 for full day or 0.5 for half day
+    if (start.toDateString() === end.toDateString()) {
+      return duration === 'HALF_DAY' ? 0.5 : 1;
+    }
+    
+    // Calculate the difference in days
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
+    
+    // Apply half day calculation only if specifically requested
+    return duration === 'HALF_DAY' ? 0.5 : diffDays;
+  };
+
   const relevantLeaves = allHistory.filter(leave => {
     if (currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER') {
-      return true; // Show all leaves for admin/HR
+      // For admin/HR: show all leaves except rejected ones
+      return leave.status !== 'REJECTED';
     } else {
-      return leave.employee?.id === currentUser?.id; // Show only user's leaves for regular employees
+      // For regular employees: show only their leaves
+      return leave.employee?.id === currentUser?.id;
     }
   });
 
@@ -213,6 +235,7 @@ const Dashboard = () => {
                         <th>Type</th>
                         <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Days</th>
                         <th>Status</th>
                         <th>Actions</th>
                       </tr>
@@ -227,6 +250,7 @@ const Dashboard = () => {
                             <td>{leave.type}</td>
                             <td>{formatDate(leave.startDate)}</td>
                             <td>{formatDate(leave.endDate)}</td>
+                            <td>{calculateDaysTaken(leave.startDate, leave.endDate, leave.leaveDuration)}</td>
                             <td>
                               <span className={`badge bg-${leave.status === 'APPROVED' ? 'success' : leave.status === 'PENDING' ? 'warning' : 'danger'}`}>
                                 {leave.status}
@@ -270,7 +294,7 @@ const Dashboard = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={isAdminOrHR ? 6 : 5} className="text-center text-muted">
+                          <td colSpan={isAdminOrHR ? 7 : 6} className="text-center text-muted">
                             No leave requests found.
                           </td>
                         </tr>

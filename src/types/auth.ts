@@ -14,6 +14,8 @@ export interface Leave {
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   type: 'PTO' | 'SICK' | 'COMPASSIONATE' | 'MATERNITY' | 'UNPAID'; // Adjust leave types as needed
+  leaveDuration: 'FULL_DAY' | 'HALF_DAY';
+  numberOfDays: number;
   employee?: Employee; // Employee might be null in some contexts?
 }
 

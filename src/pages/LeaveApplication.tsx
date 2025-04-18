@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../context/store';
@@ -11,13 +11,17 @@ interface LeaveFormData {
   startDate: string;
   endDate: string;
   reason: string;
+  leaveDuration: 'FULL_DAY' | 'HALF_DAY';
+  numberOfDays: number;
 }
 
 const initialFormData: LeaveFormData = {
   leaveType: '',
   startDate: '',
   endDate: '',
-  reason: ''
+  reason: '',
+  leaveDuration: 'FULL_DAY',
+  numberOfDays: 0
 };
 
 const LeaveApplication = () => {
@@ -28,6 +32,39 @@ const LeaveApplication = () => {
 
   const [formData, setFormData] = useState<LeaveFormData>(initialFormData);
   const [file, setFile] = useState<File | null>(null);
+
+  const calculateNumberOfDays = (startDate: string, endDate: string, duration: 'FULL_DAY' | 'HALF_DAY') => {
+    if (!startDate || !endDate) return 0;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // If dates are the same, return 1 for full day or 0.5 for half day
+    if (start.toDateString() === end.toDateString()) {
+      return duration === 'HALF_DAY' ? 0.5 : 1;
+    }
+    
+    // Calculate the difference in days
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
+    
+    // Apply half day calculation only if specifically requested
+    return duration === 'HALF_DAY' ? 0.5 : diffDays;
+  };
+
+  useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const newNumberOfDays = calculateNumberOfDays(
+        formData.startDate,
+        formData.endDate,
+        formData.leaveDuration
+      );
+      setFormData(prev => ({
+        ...prev,
+        numberOfDays: newNumberOfDays
+      }));
+    }
+  }, [formData.startDate, formData.endDate, formData.leaveDuration]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -55,7 +92,9 @@ const LeaveApplication = () => {
         endDate: formData.endDate,
         reason: formData.reason,
         type: formData.leaveType,
-        employeeId: user?.id || 0
+        employeeId: user?.id || 0,
+        leaveDuration: formData.leaveDuration,
+        numberOfDays: formData.numberOfDays
       };
 
       // Append leaveRequest as a blob with application/json type
@@ -125,6 +164,20 @@ const LeaveApplication = () => {
               </Col>
 
               <Col md={6} className="mb-3">
+                <Form.Label htmlFor="leaveDuration">Leave Duration</Form.Label>
+                <Form.Select
+                  id="leaveDuration"
+                  name="leaveDuration"
+                  value={formData.leaveDuration}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="FULL_DAY">Full Day</option>
+                  <option value="HALF_DAY">Half Day</option>
+                </Form.Select>
+              </Col>
+
+              <Col md={6} className="mb-3">
                 <Form.Label htmlFor="startDate">Start Date</Form.Label>
                 <Form.Control
                   type="date"
@@ -146,6 +199,21 @@ const LeaveApplication = () => {
                   onChange={handleInputChange}
                   required
                 />
+              </Col>
+
+              <Col md={6} className="mb-3">
+                <Form.Label>Number of Days</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.numberOfDays}
+                  disabled
+                  className="bg-light"
+                />
+                <Form.Text className="text-muted">
+                  {formData.leaveDuration === 'HALF_DAY' 
+                    ? 'Half days are counted as 0.5 days'
+                    : 'Full days are counted as 1 day each'}
+                </Form.Text>
               </Col>
 
               <Col xs={12} className="mb-3">
