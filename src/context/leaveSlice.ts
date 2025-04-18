@@ -175,6 +175,23 @@ export const fetchLeaveBalances = createAsyncThunk(
   }
 );
 
+// Async Thunk for Deleting Leave
+export const deleteLeave = createAsyncThunk(
+  'leaves/deleteLeave',
+  async (leaveId: number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/leaves/${leaveId}`);
+      return leaveId;
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to delete leave';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const leaveSlice = createSlice({
   name: 'leaves',
   initialState,
@@ -280,6 +297,20 @@ const leaveSlice = createSlice({
       .addCase(fetchLeaveBalances.rejected, (state, action) => {
         state.fetchBalancesStatus = 'failed';
         state.fetchBalancesError = action.payload as string;
+      })
+      // Delete Leave Reducers
+      .addCase(deleteLeave.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(deleteLeave.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        // Remove the deleted leave from allHistory
+        state.allHistory = state.allHistory.filter(leave => leave.id !== action.payload);
+      })
+      .addCase(deleteLeave.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload as string;
       });
   },
 });

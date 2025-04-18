@@ -1,9 +1,10 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaMicrosoft } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../context/store';
-import { loginUser } from '../context/authSlice';
+import { loginUser, loginWithMicrosoft, handleMicrosoftCallback } from '../context/authSlice';
+import { toast } from 'react-toastify';
 
 interface LoginFormData {
   username: string;
@@ -19,6 +20,7 @@ const Login = () => {
   // Hooks
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Redux state
   const { status, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -26,6 +28,29 @@ const Login = () => {
   // Local state
   const [formData, setFormData] = useState<LoginFormData>(initialFormData);
   const { username, password } = formData;
+
+  // Handle Microsoft OAuth callback
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
+
+    if (code) {
+      dispatch(handleMicrosoftCallback(code))
+        .unwrap()
+        .then(() => {
+          toast.success('Successfully logged in with Microsoft');
+          navigate('/dashboard');
+        })
+        .catch((err) => {
+          toast.error(err || 'Failed to complete Microsoft login');
+        });
+    }
+
+    if (error) {
+      toast.error('Microsoft login failed: ' + error);
+    }
+  }, [dispatch, location, navigate]);
 
   // Redirect if authenticated
   useEffect(() => {
@@ -55,8 +80,13 @@ const Login = () => {
     }
   };
 
-  const handleMicrosoftLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/microsoft`;
+  const handleMicrosoftLogin = async () => {
+    try {
+      await dispatch(loginWithMicrosoft()).unwrap();
+    } catch (error: unknown) {
+      console.error('Microsoft login failed:', error);
+      toast.error('Failed to initiate Microsoft login');
+    }
   };
 
   const isLoading = status === 'loading';

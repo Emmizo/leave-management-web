@@ -19,6 +19,7 @@ import TeamCalendar from './pages/TeamCalendar';
 import Profile from './pages/Profile';
 import Unauthorized from './pages/Unauthorized'; // Import Unauthorized page
 import Holidays from './pages/Holidays';
+import MicrosoftCallback from './pages/MicrosoftCallback';
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
@@ -88,6 +89,7 @@ function App() {
         <Route element={<AuthLayout />}>
           {/* Redirect logged-in users away from login */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+          <Route path="/microsoft-callback" element={<MicrosoftCallback />} />
         </Route>
 
         {/* Unauthorized Page Route */}

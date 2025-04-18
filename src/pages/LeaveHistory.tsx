@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaEye, FaDownload } from 'react-icons/fa';
+import { FaEye, FaDownload, FaTrash } from 'react-icons/fa';
 import { AppDispatch, RootState } from '../context/store';
-import { fetchAllLeaveHistory } from '../context/leaveSlice';
+import { fetchAllLeaveHistory, deleteLeave } from '../context/leaveSlice';
+import { toast } from 'react-toastify';
+import { Modal, Button } from 'react-bootstrap';
 
 const LeaveHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { allHistory, fetchHistoryStatus, fetchHistoryError } = useSelector((state: RootState) => state.leaves);
   const [selectedLeaveId, setSelectedLeaveId] = useState<number | null>(null);
+  const [leaveToDelete, setLeaveToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     if (fetchHistoryStatus === 'idle') {
@@ -27,6 +30,17 @@ const LeaveHistory = () => {
         return 'bg-danger';
       default:
         return 'bg-secondary';
+    }
+  };
+
+  const handleDelete = async (leaveId: number) => {
+    try {
+      await dispatch(deleteLeave(leaveId)).unwrap();
+      toast.success('Leave request deleted successfully');
+      setLeaveToDelete(null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete leave request';
+      toast.error(errorMessage);
     }
   };
 
@@ -79,6 +93,13 @@ const LeaveHistory = () => {
                         >
                           <FaEye />
                         </button>
+                        <button 
+                          className="btn btn-sm btn-outline-danger me-2"
+                          title="Delete Leave"
+                          onClick={() => setLeaveToDelete(leave.id)}
+                        >
+                          <FaTrash />
+                        </button>
                         <button className="btn btn-sm btn-outline-secondary" title="Download Document (Not Implemented)" disabled>
                            <FaDownload />
                         </button>
@@ -96,6 +117,7 @@ const LeaveHistory = () => {
         </div>
       </div>
 
+      {/* View Details Modal */}
       {selectedLeave && (
         <div className="modal fade show" style={{ display: 'block' }} tabIndex={-1}>
           <div className="modal-dialog modal-dialog-centered">
@@ -129,6 +151,27 @@ const LeaveHistory = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={!!leaveToDelete} onHide={() => setLeaveToDelete(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this leave request? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setLeaveToDelete(null)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={() => leaveToDelete && handleDelete(leaveToDelete)}
+          >
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

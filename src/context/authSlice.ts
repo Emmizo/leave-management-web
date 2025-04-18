@@ -2,7 +2,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../services/api';
 import { Employee, LoginResponse, ProfileResponse } from '../types/auth';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { initiateLoginWithMicrosoft } from '../services/authService';
 
 // Export the interface
 export interface AuthState {
@@ -46,21 +47,37 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Async Thunk for Microsoft Login
+// Login with Microsoft action
 export const loginWithMicrosoft = createAsyncThunk(
   'auth/loginWithMicrosoft',
   async (_, { rejectWithValue }) => {
     try {
-      // Redirect to Microsoft OAuth endpoint
-      window.location.href = `${process.env.REACT_APP_API_URL}/auth/microsoft`;
-      // Note: The actual login will happen on the backend after redirect
-      return null;
+      initiateLoginWithMicrosoft();
+      return null; // This action won't complete normally due to the redirect
     } catch (error: unknown) {
-      let errorMessage = 'Microsoft login failed';
-      if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data?.message || errorMessage;
+      console.error('Microsoft login initiation failed:', error);
+      return rejectWithValue('Failed to initiate Microsoft login');
+    }
+  }
+);
+
+// Handle Microsoft callback action
+export const handleMicrosoftCallback = createAsyncThunk(
+  'auth/handleMicrosoftCallback',
+  async (code: string, { rejectWithValue }) => {
+    try {
+      // Send the code to your backend to exchange for tokens
+      const response = await api.post('/auth/microsoft', { code });
+      console.log('Microsoft callback response:', response.data);
+      localStorage.setItem('authToken', response.data.token);
+
+      console.log('Microsoft callback response:', response.data);
+      return response.data;
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response?.data) {
+        return rejectWithValue(error.response.data.message);
       }
-      return rejectWithValue(errorMessage);
+      return rejectWithValue('Failed to authenticate with Microsoft');
     }
   }
 );
@@ -100,6 +117,12 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('authToken');
     },
+    loginSuccess: (state, action: PayloadAction<{ token: string }>) => {
+      state.token = action.payload.token;
+      state.isAuthenticated = true;
+      state.status = 'succeeded';
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -126,10 +149,24 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginWithMicrosoft.fulfilled, (state) => {
-        state.status = 'succeeded';
-        // The actual authentication will happen after redirect
+        state.status = 'idle';
       })
       .addCase(loginWithMicrosoft.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload as string;
+      })
+      // Microsoft callback cases
+      .addCase(handleMicrosoftCallback.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(handleMicrosoftCallback.fulfilled, (state, action) => {
+        state.status = 'idle';
+        state.isAuthenticated = true;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(handleMicrosoftCallback.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string;
       })
@@ -153,5 +190,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, loginSuccess } = authSlice.actions;
 export default authSlice.reducer; 

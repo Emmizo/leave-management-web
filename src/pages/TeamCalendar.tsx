@@ -8,6 +8,31 @@ import { Card, Button, Badge, Spinner, Row, Col, Form } from 'react-bootstrap';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
+// Add custom styles for calendar
+const calendarStyles = `
+  .calendar-tile-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-top: 2px;
+  }
+  
+  .leave-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  
+  .react-calendar__tile--active {
+    background-color: #e6f7ff !important;
+  }
+  
+  .react-calendar__tile--now {
+    background-color: #f0f8ff !important;
+  }
+`;
+
 type ViewMode = 'calendar' | 'list';
 
 interface CalendarTileProperties {
@@ -48,14 +73,11 @@ const TeamCalendar: React.FC = () => {
   }, [] as (Leave & { employeeName: string; employeeDepartment: string; employeePosition: string })[]);
 
   const filteredLeaves = allLeaves.filter(leave => {
+    // Filter by department if selected
     if (selectedDepartment !== 'all' && leave.employeeDepartment !== selectedDepartment) {
       return false;
     }
-    if (viewMode === 'calendar') {
-      const leaveStart = new Date(leave.startDate);
-      const leaveEnd = new Date(leave.endDate);
-      return selectedDate >= leaveStart && selectedDate <= leaveEnd;
-    }
+    // No need to filter by date here as we'll do that in getLeavesForDate
     return true;
   });
 
@@ -81,8 +103,10 @@ const TeamCalendar: React.FC = () => {
 
   const getLeavesForDate = (date: Date): Leave[] => {
     return filteredLeaves.filter(leave => {
-      const leaveDate = new Date(leave.startDate);
-      return leaveDate.toDateString() === date.toDateString();
+      const leaveStart = new Date(leave.startDate);
+      const leaveEnd = new Date(leave.endDate);
+      // Check if the selected date falls within the leave period (inclusive)
+      return date >= leaveStart && date <= leaveEnd;
     });
   };
 
@@ -97,7 +121,7 @@ const TeamCalendar: React.FC = () => {
             key={leave.id}
             className="leave-indicator"
             style={{ backgroundColor: getLeaveTypeColor(leave.type) }}
-            title={`${leave.employee?.firstName} ${leave.employee?.lastName} - ${leave.type}`}
+            title={`${leave.employee?.firstName} ${leave.employee?.lastName} - ${leave.type} (${leave.status})`}
           />
         ))}
       </div>
@@ -152,6 +176,7 @@ const TeamCalendar: React.FC = () => {
   // Main component render
   return (
     <div className="container py-4">
+      <style>{calendarStyles}</style>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 style={{ color: '#184C55' }}>Team Calendar</h2>
         <div className="btn-group">
