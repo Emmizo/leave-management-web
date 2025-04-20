@@ -102,11 +102,17 @@ const TeamCalendar: React.FC = () => {
   };
 
   const getLeavesForDate = (date: Date): Leave[] => {
+    // Set the time to midnight for accurate date comparison
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+
     return filteredLeaves.filter(leave => {
       const leaveStart = new Date(leave.startDate);
+      leaveStart.setHours(0, 0, 0, 0);
       const leaveEnd = new Date(leave.endDate);
+      leaveEnd.setHours(0, 0, 0, 0);
       // Check if the selected date falls within the leave period (inclusive)
-      return date >= leaveStart && date <= leaveEnd;
+      return compareDate >= leaveStart && compareDate <= leaveEnd;
     });
   };
 
@@ -250,49 +256,45 @@ const TeamCalendar: React.FC = () => {
       <Card className="shadow-sm">
         <Card.Body>
           {viewMode === 'calendar' ? (
-            <div className="row">
-              <div className="col-md-8">
+            <Row>
+              <Col md={8}>
                 <Calendar
                   onChange={handleDateChange}
                   value={selectedDate}
                   tileContent={calendarTileContent}
-                  className="w-100 border-0"
+                  className="w-100"
                 />
-              </div>
-              <div className="col-md-4">
-                <h5 className="mb-3" style={{ color: '#184C55' }}>Leaves for Selected Date</h5>
-                {getLeavesForDate(selectedDate).length > 0 ? (
-                  <div className="list-group">
-                    {getLeavesForDate(selectedDate).map((leave) => (
-                      <div
-                        key={`${leave.employee?.id}-${leave.id}`}
-                        className="list-group-item list-group-item-action"
-                      >
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <h6 className="mb-1">{`${leave.employee?.firstName} ${leave.employee?.lastName}`}</h6>
-                            <small className="text-muted">{leave.employee?.department}</small>
+              </Col>
+              <Col md={4}>
+                <div className="leaves-for-date">
+                  <h5 className="mb-3">Leaves for {selectedDate.toLocaleDateString()}</h5>
+                  {getLeavesForDate(selectedDate).length > 0 ? (
+                    <div className="leave-list">
+                      {getLeavesForDate(selectedDate).map(leave => (
+                        <div key={leave.id} className="leave-item mb-3 p-3 border rounded">
+                          <div className="d-flex justify-content-between align-items-start mb-2">
+                            <strong>{leave.employee?.firstName} {leave.employee?.lastName}</strong>
+                            {getStatusBadge(leave.status)}
                           </div>
-                          <Badge
-                            style={{
-                              backgroundColor: getLeaveTypeColor(leave.type),
-                              color: 'white'
-                            }}
-                          >
-                            {leave.type}
-                          </Badge>
+                          <div className="text-muted">
+                            <small>
+                              {leave.type} • {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                            </small>
+                          </div>
+                          {leave.reason && (
+                            <div className="mt-2">
+                              <small className="text-muted">{leave.reason}</small>
+                            </div>
+                          )}
                         </div>
-                        <div className="mt-2">
-                          {getStatusBadge(leave.status)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted">No leaves scheduled for this date.</p>
-                )}
-              </div>
-            </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted">No leaves scheduled for this date.</p>
+                  )}
+                </div>
+              </Col>
+            </Row>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle">

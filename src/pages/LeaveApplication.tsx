@@ -32,6 +32,7 @@ const LeaveApplication = () => {
 
   const [formData, setFormData] = useState<LeaveFormData>(initialFormData);
   const [file, setFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calculateNumberOfDays = (startDate: string, endDate: string, duration: 'FULL_DAY' | 'HALF_DAY') => {
     if (!startDate || !endDate) return 0;
@@ -44,7 +45,7 @@ const LeaveApplication = () => {
       return duration === 'HALF_DAY' ? 0.5 : 1;
     }
     
-    // Calculate the difference in days
+    // Calculate the difference in days including both start and end dates
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
     
@@ -52,8 +53,27 @@ const LeaveApplication = () => {
     return duration === 'HALF_DAY' ? 0.5 : diffDays;
   };
 
+  // Function to check if a date is a weekend
+  const isWeekend = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+  };
+
+  // Function to validate date selection
+  const validateDate = (date: string) => {
+    if (!date) return true;
+    const selectedDate = new Date(date);
+    return !isWeekend(selectedDate);
+  };
+
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
+      // Validate dates
+      if (!validateDate(formData.startDate) || !validateDate(formData.endDate)) {
+        toast.error('Please select valid dates (weekends are not allowed)');
+        return;
+      }
+
       const newNumberOfDays = calculateNumberOfDays(
         formData.startDate,
         formData.endDate,
@@ -68,6 +88,37 @@ const LeaveApplication = () => {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // If leave type is changed to MATERNITY, automatically set end date to 90 days after start date
+    if (name === 'leaveType' && value === 'MATERNITY' && formData.startDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 90);
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        endDate: endDate.toISOString().split('T')[0],
+        leaveDuration: 'FULL_DAY' // Maternity leave is always full day
+      }));
+      return;
+    }
+    
+    // If start date is changed and leave type is MATERNITY, update end date
+    if (name === 'startDate' && formData.leaveType === 'MATERNITY' && value) {
+      const startDate = new Date(value);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 90);
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        endDate: endDate.toISOString().split('T')[0]
+      }));
+      return;
+    }
+    
+    // For all other cases, just update the changed field
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -83,7 +134,13 @@ const LeaveApplication = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
       const formDataToSend = new FormData();
       
       // Create the leaveRequest object
@@ -126,10 +183,12 @@ const LeaveApplication = () => {
     } catch (err) {
       console.error('Failed to create leave:', err);
       toast.error('Failed to submit leave request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const isLoading = status === 'loading';
+  const isLoading = status === 'loading' || isSubmitting;
 
   return (
     <Card className="shadow-sm">
@@ -186,7 +245,12 @@ const LeaveApplication = () => {
                   value={formData.startDate}
                   onChange={handleInputChange}
                   required
+                  min={new Date().toISOString().split('T')[0]}
+                  onKeyDown={(e) => e.preventDefault()}
                 />
+                <Form.Text className="text-muted">
+                  Weekends are not allowed
+                </Form.Text>
               </Col>
 
               <Col md={6} className="mb-3">
@@ -198,7 +262,12 @@ const LeaveApplication = () => {
                   value={formData.endDate}
                   onChange={handleInputChange}
                   required
+                  min={formData.startDate || new Date().toISOString().split('T')[0]}
+                  onKeyDown={(e) => e.preventDefault()}
                 />
+                <Form.Text className="text-muted">
+                  Weekends are not allowed
+                </Form.Text>
               </Col>
 
               <Col md={6} className="mb-3">
