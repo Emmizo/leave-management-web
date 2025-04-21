@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera } from 'react-icons/fa';
 import { RootState, AppDispatch } from '../context/store';
 import { fetchLeaveBalances } from '../context/leaveSlice';
+import { updateProfile } from '../context/authSlice';
 import { toast } from 'react-toastify';
 
 const Profile = () => {
@@ -66,12 +67,15 @@ const Profile = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, you would dispatch an action to update the profile
-    console.log('Profile update:', formData);
-    toast.success('Profile updated successfully!');
-    setIsEditing(false);
+    try {
+      await dispatch(updateProfile(formData)).unwrap();
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+    }
   };
 
   const handleEdit = () => {

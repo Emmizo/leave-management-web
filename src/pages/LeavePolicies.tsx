@@ -376,166 +376,215 @@ const LeavePolicies: React.FC = () => {
         onHide={() => setShowFormModal(false)} 
         centered 
         size="lg"
-        style={{ maxWidth: '900px' }}
-        dialogClassName="modal-xl modal-dialog-centered"
         contentClassName="border-0 shadow"
       >
         <Modal.Header closeButton style={{ backgroundColor: '#184C55', color: 'white', borderBottom: 'none' }}>
-          <Modal.Title className="w-100 text-center">{selectedPolicy ? 'Edit Leave Policy' : 'Create Leave Policy'}</Modal.Title>
+          <Modal.Title>{selectedPolicy ? 'Edit Leave Policy' : 'Create Leave Policy'}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-4">
           <Form onSubmit={handleSubmit}>
-            <Row className="mb-4">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Leave Type</Form.Label>
-                  <Form.Select
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="form-select-lg"
-                    style={{ borderColor: '#184C55' }}
-                  >
-                    <option value="">Select leave type</option>
-                    <option value="PTO">Personal Time Off (PTO)</option>
-                    <option value="SICK">Sick Leave</option>
-                    <option value="COMPASSIONATE">Compassionate Leave</option>
-                    <option value="MATERNITY">Maternity Leave</option>
-                    <option value="UNPAID">Unpaid Leave</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Description</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    required
-                    className="form-control-lg"
-                    style={{ borderColor: '#184C55' }}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row className="mb-4">
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Days Per Year</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="daysPerYear"
-                    value={formData.daysPerYear}
-                    onChange={handleInputChange}
-                    required
-                    min={0}
-                    className="form-control-lg"
-                    style={{ borderColor: '#184C55' }}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Carry Forward Days</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="carryForwardDays"
-                    value={formData.carryForwardDays}
-                    onChange={handleInputChange}
-                    required
-                    min={0}
-                    className="form-control-lg"
-                    style={{ borderColor: '#184C55' }}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Max Consecutive Days</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="maxConsecutiveDays"
-                    value={formData.maxConsecutiveDays}
-                    onChange={handleInputChange}
-                    required
-                    min={0}
-                    className="form-control-lg"
-                    style={{ borderColor: '#184C55' }}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label className="fw-bold" style={{ color: '#184C55' }}>Min Notice Days</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="minNoticeDays"
-                    value={formData.minNoticeDays}
-                    onChange={handleInputChange}
-                    required
-                    min={0}
-                    className="form-control-lg"
-                    style={{ borderColor: '#184C55' }}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row className="mb-4">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Check
-                    type="switch"
-                    id="requiresApproval"
-                    name="requiresApproval"
-                    label="Requires Approval"
-                    checked={formData.requiresApproval}
-                    onChange={handleInputChange}
-                    className="custom-switch"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Check
-                    type="switch"
-                    id="active"
-                    name="active"
-                    label="Active"
-                    checked={formData.active}
-                    onChange={handleInputChange}
-                    className="custom-switch"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <div className="d-flex justify-content-end gap-2">
-              <Button 
-                variant="secondary" 
-                onClick={() => setShowFormModal(false)}
-                disabled={isSubmitting}
-                size="lg"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                size="lg"
-                style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                    {selectedPolicy ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  selectedPolicy ? 'Update Policy' : 'Create Policy'
-                )}
-              </Button>
-            </div>
+            <fieldset disabled={isSubmitting}>
+              <div className="mb-4">
+                <h5 className="mb-3" style={{ color: '#184C55' }}>Basic Information</h5>
+                <Row>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Leave Type</Form.Label>
+                      <Form.Select
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                        className="form-select-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      >
+                        <option value="">Select leave type</option>
+                        <option value="PTO">Personal Time Off (PTO)</option>
+                        <option value="SICK">Sick Leave</option>
+                        <option value="COMPASSIONATE">Compassionate Leave</option>
+                        <option value="MATERNITY">Maternity Leave</option>
+                        <option value="UNPAID">Unpaid Leave</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Description</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={3}
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Enter policy description..."
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="mb-3" style={{ color: '#184C55' }}>Duration Settings</h5>
+                <Row>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Days Per Year</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="daysPerYear"
+                        value={formData.daysPerYear}
+                        onChange={handleInputChange}
+                        required
+                        min={0}
+                        placeholder="0"
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      />
+                      <Form.Text className="text-muted">
+                        Maximum number of days allowed per year
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Carry Forward Days</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="carryForwardDays"
+                        value={formData.carryForwardDays}
+                        onChange={handleInputChange}
+                        required
+                        min={0}
+                        placeholder="0"
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      />
+                      <Form.Text className="text-muted">
+                        Maximum days that can be carried forward to next year
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Max Consecutive Days</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="maxConsecutiveDays"
+                        value={formData.maxConsecutiveDays}
+                        onChange={handleInputChange}
+                        required
+                        min={0}
+                        placeholder="0"
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      />
+                      <Form.Text className="text-muted">
+                        Maximum consecutive days allowed per request
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Min Notice Days</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="minNoticeDays"
+                        value={formData.minNoticeDays}
+                        onChange={handleInputChange}
+                        required
+                        min={0}
+                        placeholder="0"
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
+                      />
+                      <Form.Text className="text-muted">
+                        Minimum days of notice required before leave start date
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="mb-3" style={{ color: '#184C55' }}>Policy Settings</h5>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Check
+                        type="switch"
+                        id="requiresApproval"
+                        name="requiresApproval"
+                        label={
+                          <span className="fw-medium" style={{ color: '#184C55' }}>
+                            Requires Approval
+                          </span>
+                        }
+                        checked={formData.requiresApproval}
+                        onChange={handleInputChange}
+                        className="custom-switch"
+                      />
+                      <Form.Text className="text-muted">
+                        Whether this leave type requires manager approval
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Check
+                        type="switch"
+                        id="active"
+                        name="active"
+                        label={
+                          <span className="fw-medium" style={{ color: '#184C55' }}>
+                            Active
+                          </span>
+                        }
+                        checked={formData.active}
+                        onChange={handleInputChange}
+                        className="custom-switch"
+                      />
+                      <Form.Text className="text-muted">
+                        Whether this leave policy is currently active
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="d-flex justify-content-end gap-2">
+                <Button 
+                  variant="outline-secondary" 
+                  onClick={() => setShowFormModal(false)}
+                  disabled={isSubmitting}
+                  className="px-4"
+                  size="lg"
+                  style={{ borderWidth: '2px' }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-4"
+                  size="lg"
+                  style={{ backgroundColor: '#184C55', borderColor: '#184C55', borderWidth: '2px' }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                      {selectedPolicy ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    selectedPolicy ? 'Update Policy' : 'Create Policy'
+                  )}
+                </Button>
+              </div>
+            </fieldset>
           </Form>
         </Modal.Body>
       </Modal>

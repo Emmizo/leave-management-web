@@ -55,10 +55,10 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <Modal show={isOpen} onHide={handleClose} centered size="lg" className="employee-modal">
-      <Modal.Header closeButton className="border-0 pb-0">
+      <Modal.Header closeButton className="border-0 pb-0" style={{ backgroundColor: '#184C55', color: 'white', borderBottom: 'none' }}>
         <Modal.Title className="w-100">
-          <h4 className="mb-0" style={{ color: '#184C55' }}>Register New Employee</h4>
-          <small className="text-muted">Fill in the employee details below</small>
+          <h4 className="mb-0" style={{ color: '#ffffff' }}>Register New Employee</h4>
+          <small className="text-muted"></small>
         </Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>

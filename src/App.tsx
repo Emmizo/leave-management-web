@@ -21,6 +21,8 @@ import Unauthorized from './pages/Unauthorized'; // Import Unauthorized page
 import Holidays from './pages/Holidays';
 import MicrosoftCallback from './pages/MicrosoftCallback';
 import LeavePolicies from './pages/LeavePolicies';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
@@ -121,6 +123,8 @@ function App() {
           {/* Redirect logged-in users away from login */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
           <Route path="/microsoft-callback" element={<MicrosoftCallback />} />
+          <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/dashboard" />} />
+          <Route path="/reset-password" element={!isAuthenticated ? <ResetPassword /> : <Navigate to="/dashboard" />} />
         </Route>
 
         {/* Unauthorized Page Route */}
@@ -155,6 +159,8 @@ function App() {
           {/* Add other nested routes here */}
         </Route>
 
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

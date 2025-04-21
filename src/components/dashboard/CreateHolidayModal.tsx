@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../context/store';
 import { createHoliday, updateHoliday, resetHolidayStatus } from '../../context/holidaySlice';
 import { Holiday } from '../../context/holidaySlice';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 interface Props {
   isOpen: boolean;
@@ -62,6 +64,17 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
     }));
   };
 
+  const handleDateChange = (date: Date | null) => {
+    if (date) {
+      // Format date as YYYY-MM-DD
+      const formattedDate = date.toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        date: formattedDate
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -95,17 +108,23 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
   };
 
   return (
-    <Modal show={isOpen} onHide={onClose} centered className="holiday-modal">
-      <Modal.Header closeButton className="border-0 pb-0">
+    <Modal 
+      show={isOpen} 
+      onHide={onClose} 
+      centered 
+      size="lg"
+      contentClassName="border-0 shadow"
+    >
+      <Modal.Header closeButton className="border-0 pb-0"  style={{ backgroundColor: '#184C55', color: 'white', borderBottom: 'none' }}>
         <Modal.Title className="w-100">
-          <h4 className="mb-0" style={{ color: '#184C55' }}>
+          <h4 className="mb-0" style={{ color: '#ffffff' }}>
             {holiday ? 'Edit Holiday' : 'Create New Holiday'}
           </h4>
-          <small className="text-muted">Fill in the holiday details below</small>
+          <small className="text-muted"></small>
         </Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
-        <Modal.Body className="pt-4">
+        <Modal.Body className="p-4">
           {status === 'failed' && error && (
             <Alert variant="danger" className="mb-4">
               <i className="fas fa-exclamation-circle me-2"></i>
@@ -140,23 +159,20 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
               <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
                 Date <span className="text-danger">*</span>
               </Form.Label>
-              <div className="date-picker-wrapper border-2 rounded" style={{ 
-                borderColor: '#184C55',
-                backgroundColor: 'white',
-                position: 'relative'
-              }}>
-                <Form.Control
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control-lg border-0"
+              <div style={{ borderColor: '#184C55' }}>
+                <DatePicker
+                  selected={formData.date ? new Date(formData.date) : null}
+                  onChange={handleDateChange}
+                  dateFormat="yyyy-MM-dd"
+                  className="form-control form-control-lg border-2 date-picker-input"
+                  placeholderText="Select holiday date"
+                  calendarClassName="custom-calendar"
+                  wrapperClassName="w-100"
                 />
-                <div className="position-absolute" style={{ right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-                  <i className="fas fa-calendar-alt" style={{ color: '#184C55' }}></i>
-                </div>
               </div>
+              <Form.Text className="text-muted">
+                Select the date for this holiday
+              </Form.Text>
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="formHolidayDescription">

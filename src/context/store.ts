@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import leaveReducer from './leaveSlice';
 import holidayReducer from './holidaySlice';
 import leavePolicyReducer from './leavePolicySlice';
+import passwordResetReducer from './passwordResetSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     leaves: leaveReducer,
     holidays: holidayReducer,
     leavePolicy: leavePolicyReducer,
+    passwordReset: passwordResetReducer,
   },
 });
 

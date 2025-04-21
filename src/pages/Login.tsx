@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FaMicrosoft } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../context/store';
@@ -28,6 +28,7 @@ const Login = () => {
   // Local state
   const [formData, setFormData] = useState<LoginFormData>(initialFormData);
   const { username, password } = formData;
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Handle Microsoft OAuth callback
   useEffect(() => {
@@ -150,6 +151,27 @@ const Login = () => {
                 placeholder="Enter your password"
                 style={{ borderRadius: '8px' }}
               />
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="mb-3">
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="form-check">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <label className="form-check-label" htmlFor="rememberMe">
+                    Remember me
+                  </label>
+                </div>
+                <Link to="/forgot-password" className="text-decoration-none">
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             {/* Action Buttons */}

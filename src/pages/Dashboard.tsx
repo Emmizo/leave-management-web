@@ -52,6 +52,7 @@ const Dashboard = () => {
   const [selectedLeave, setSelectedLeave] = useState<{ id: number; action: 'approve' | 'reject' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState<LeaveDetails | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAllLeaveHistory());
@@ -111,16 +112,21 @@ const Dashboard = () => {
   const handleConfirmAction = async () => {
     if (!selectedLeave) return;
 
+    setIsUpdatingStatus(true);
     const status = selectedLeave.action === 'approve' ? 'APPROVED' : 'REJECTED';
-    await dispatch(updateLeaveStatus({
-      leaveId: selectedLeave.id,
-      status,
-      ...(status === 'REJECTED' ? { rejectionReason } : {})
-    }));
-    setSelectedLeave(null);
-    setRejectionReason('');
-    dispatch(fetchAllLeaveHistory());
-    dispatch(fetchLeaveBalances());
+    try {
+      await dispatch(updateLeaveStatus({
+        leaveId: selectedLeave.id,
+        status,
+        ...(status === 'REJECTED' ? { rejectionReason } : {})
+      }));
+      setSelectedLeave(null);
+      setRejectionReason('');
+      dispatch(fetchAllLeaveHistory());
+      dispatch(fetchLeaveBalances());
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleViewDetails = (leave: LeaveDetails) => {
@@ -655,16 +661,27 @@ const Dashboard = () => {
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setSelectedLeave(null)}>
+          <Button 
+            variant="outline-secondary" 
+            onClick={() => setSelectedLeave(null)}
+            disabled={isUpdatingStatus}
+          >
             Cancel
           </Button>
           <Button
             variant={selectedLeave?.action === 'approve' ? 'success' : 'danger'}
             onClick={handleConfirmAction}
-            disabled={selectedLeave?.action === 'reject' && !rejectionReason}
+            disabled={selectedLeave?.action === 'reject' && !rejectionReason || isUpdatingStatus}
             style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
           >
-            {selectedLeave?.action === 'approve' ? 'Approve' : 'Reject'}
+            {isUpdatingStatus ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                {selectedLeave?.action === 'approve' ? 'Approving...' : 'Rejecting...'}
+              </>
+            ) : (
+              selectedLeave?.action === 'approve' ? 'Approve' : 'Reject'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

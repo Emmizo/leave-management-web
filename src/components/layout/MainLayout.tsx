@@ -26,7 +26,7 @@ const MainLayout = () => {
 
   // Admin/HR only menu items
   const adminMenuItems = [
-    { path: '/leave-policies', icon: <FaCalendarAlt />, label: 'Manage Leave Policies' },
+    { path: '/leave-policies', icon: <FaCalendarAlt />, label: 'Leave Policies' },
   ];
 
   // Combine menu items based on user role
@@ -114,16 +114,18 @@ const MainLayout = () => {
               </span>
               <small className="text-muted">{user?.position || 'Position'}</small>
             </div>
-            {user?.profilePicture ? (
-              <img 
-                src={user.profilePicture} 
-                alt="Profile" 
-                className="rounded-circle" 
-                style={{ width: '45px', height: '45px', objectFit: 'cover', border: '2px solid #184C55' }}
-              />
-            ) : (
-              <FaUserCircle size={45} style={{ color: '#184C55' }} />
-            )}
+            <Link to="/profile" className="text-decoration-none">
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture} 
+                  alt="Profile" 
+                  className="rounded-circle" 
+                  style={{ width: '45px', height: '45px', objectFit: 'cover', border: '2px solid #184C55', cursor: 'pointer' }}
+                />
+              ) : (
+                <FaUserCircle size={45} style={{ color: '#184C55', cursor: 'pointer' }} />
+              )}
+            </Link>
           </div>
         </div>
         <div className="p-4 bg-light" style={{minHeight: 'calc(100vh - 76px)'}}>

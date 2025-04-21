@@ -105,6 +105,23 @@ export const fetchUserProfile = createAsyncThunk(
   }
 );
 
+// Async Thunk for Updating User Profile
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profileData: Partial<Employee>, { rejectWithValue }) => {
+    try {
+      const response = await api.put<ProfileResponse>('/profile', profileData);
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to update profile';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -185,6 +202,20 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
         state.token = null; // Clear token if fetch fails
+        state.error = action.payload as string;
+      })
+      // Update Profile Reducers
+      .addCase(updateProfile.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action: PayloadAction<ProfileResponse>) => {
+        state.status = 'succeeded';
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.status = 'failed';
         state.error = action.payload as string;
       });
   },
