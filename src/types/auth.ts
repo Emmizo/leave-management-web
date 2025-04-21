@@ -16,6 +16,7 @@ export interface Leave {
   type: 'PTO' | 'SICK' | 'COMPASSIONATE' | 'MATERNITY' | 'UNPAID'; // Adjust leave types as needed
   leaveDuration: 'FULL_DAY' | 'HALF_DAY';
   numberOfDays: number;
+  documentUrl?: string;
   employee?: Employee; // Employee might be null in some contexts?
 }
 
@@ -28,6 +29,8 @@ export interface Employee {
   position: string;
   annualLeaveBalance: number;
   microsoftId: string | null;
+  phone?: string | null;
+  profilePicture?: string | null;
   user: UserRole;
   leaves: Leave[] | null;
 }

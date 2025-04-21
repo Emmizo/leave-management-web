@@ -20,6 +20,7 @@ import Profile from './pages/Profile';
 import Unauthorized from './pages/Unauthorized'; // Import Unauthorized page
 import Holidays from './pages/Holidays';
 import MicrosoftCallback from './pages/MicrosoftCallback';
+import LeavePolicies from './pages/LeavePolicies';
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
@@ -44,6 +45,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Authenticated (role check removed)
+  return <>{children}</>;
+};
+
+// Helper component for admin/HR routes
+interface AdminRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+  const { isAuthenticated, status, user } = useSelector((state: RootState): AuthState => state.auth);
+  
+  // Check if user is admin or HR
+  const isAdminOrHR = user?.user?.role === 'ADMIN' || user?.user?.role === 'HR_MANAGER';
+
+  // Still checking auth?
+  if (status === 'loading' && !isAuthenticated && localStorage.getItem('authToken')) {
+    return <div className="min-vh-100 d-flex justify-content-center align-items-center">Loading...</div>;
+  }
+
+  // Not authenticated?
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Not admin or HR?
+  if (!isAdminOrHR) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Admin or HR
   return <>{children}</>;
 };
 
@@ -113,6 +144,14 @@ function App() {
           <Route path="team-calendar" element={<TeamCalendar />} />
           <Route path="profile" element={<Profile />} />
           <Route path="holidays" element={<Holidays />} />
+          <Route 
+            path="leave-policies" 
+            element={
+              <AdminRoute>
+                <LeavePolicies />
+              </AdminRoute>
+            } 
+          />
           {/* Add other nested routes here */}
         </Route>
 

@@ -9,6 +9,7 @@ export interface RegisterEmployeePayload {
   lastName: string;
   department: string;
   position: string;
+  role: 'HR_MANAGER' | 'ADMIN' | 'STAFF';
 }
 
 // Assuming the API might return the created Employee object

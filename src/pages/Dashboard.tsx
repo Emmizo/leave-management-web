@@ -8,6 +8,11 @@ import { fetchAllLeaveHistory, updateLeaveStatus, fetchLeaveBalances } from '../
 import { fetchHolidays, Holiday } from '../context/holidaySlice';
 import RegisterEmployeeModal from '../components/dashboard/RegisterEmployeeModal';
 import CreateHolidayModal from '../components/dashboard/CreateHolidayModal';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { Pie, Bar } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 interface LeaveDetails {
   id: number;
@@ -72,7 +77,7 @@ const Dashboard = () => {
   };
 
   const relevantLeaves = allHistory.filter(leave => {
-    if (currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER') {
+    if (currentUser?.user?.role === 'ADMIN' || currentUser?.user?.role === 'HR_MANAGER') {
       // For admin/HR: show all leaves except rejected ones
       return leave.status !== 'REJECTED';
     } else {
@@ -81,10 +86,10 @@ const Dashboard = () => {
     }
   });
 
-  const activityTitle = (currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER')
+  const activityTitle = (currentUser?.user?.role === 'ADMIN' || currentUser?.user?.role === 'HR_MANAGER')
     ? "Team Leave Activity"
     : "My Leave Activity";
-  const activityIcon = (currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER')
+  const activityIcon = (currentUser?.user?.role === 'ADMIN' || currentUser?.user?.role === 'HR_MANAGER')
     ? <FaUserFriends className="me-2" />
     : <FaUserClock className="me-2" />;
 
@@ -115,6 +120,7 @@ const Dashboard = () => {
     setSelectedLeave(null);
     setRejectionReason('');
     dispatch(fetchAllLeaveHistory());
+    dispatch(fetchLeaveBalances());
   };
 
   const handleViewDetails = (leave: LeaveDetails) => {
@@ -133,12 +139,37 @@ const Dashboard = () => {
     }
   };
 
-  const isAdminOrHR = currentUser?.user.role === 'ADMIN' || currentUser?.user.role === 'HR_MANAGER';
+  const isAdminOrHR = currentUser?.user?.role === 'ADMIN' || currentUser?.user?.role === 'HR_MANAGER';
+
+  // Get color for leave type
+  const getLeaveTypeColor = (type: string): string => {
+    const colors: { [key: string]: string } = {
+      'PTO': '#184C55',
+      'SICK': '#dc3545',
+      'COMPASSIONATE': '#6f42c1',
+      'MATERNITY': '#fd7e14',
+      'UNPAID': '#6c757d'
+    };
+    return colors[type] || '#184C55';
+  };
 
   // Format date to display in a more readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Check if the date is today or tomorrow
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    }
+    
+    // For other dates, show the full format
     return date.toLocaleDateString('en-US', { 
+      weekday: 'short',
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
@@ -156,10 +187,120 @@ const Dashboard = () => {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
 
+  // Prepare data for leave type distribution chart
+  const getLeaveTypeDistribution = () => {
+    const typeCounts: Record<string, number> = {};
+    
+    relevantLeaves.forEach(leave => {
+      typeCounts[leave.type] = (typeCounts[leave.type] || 0) + 1;
+    });
+    
+    const labels = Object.keys(typeCounts);
+    const data = Object.values(typeCounts);
+    
+    // Get colors from balances
+    const backgroundColors = labels.map(type => {
+      const balance = balances.find(b => b.leaveType === type);
+      return balance ? balance.colorCode : '#184C55';
+    });
+    
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: backgroundColors,
+          borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+  
+  // Prepare data for monthly leave trend chart
+  const getMonthlyLeaveTrend = () => {
+    const monthlyData: Record<string, number> = {};
+    
+    // Initialize last 6 months
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthYear = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+      monthlyData[monthYear] = 0;
+    }
+    
+    // Count leaves per month
+    relevantLeaves.forEach(leave => {
+      const startDate = new Date(leave.startDate);
+      const monthYear = startDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+      
+      if (monthlyData[monthYear] !== undefined) {
+        monthlyData[monthYear] += calculateDaysTaken(leave.startDate, leave.endDate, leave.leaveDuration);
+      }
+    });
+    
+    return {
+      labels: Object.keys(monthlyData),
+      datasets: [
+        {
+          label: 'Days of Leave',
+          data: Object.values(monthlyData),
+          backgroundColor: '#184C55',
+          borderColor: '#184C55',
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+  
+  // Chart options
+  const pieOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+      },
+      title: {
+        display: true,
+        text: 'Leave Type Distribution',
+        font: {
+          size: 16,
+          weight: 'bold' as const,
+        },
+      },
+    },
+  };
+  
+  const barOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: true,
+        text: 'Monthly Leave Trend',
+        font: {
+          size: 16,
+          weight: 'bold' as const,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Days of Leave',
+        },
+      },
+    },
+  };
+
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 style={{ color: '#184C55' }}>Dashboard</h2>
+      {/* Existing Admin/HR buttons */}
+      <div className="d-flex justify-content-end mb-4">
         {isAdminOrHR && (
           <div className="d-flex gap-2">
             <Button 
@@ -187,115 +328,185 @@ const Dashboard = () => {
               <span className="visually-hidden">Loading leave balances...</span>
             </Spinner>
           </div>
-        ) : fetchBalancesStatus === 'failed' ? (
+        ) : fetchBalancesError ? (
           <div className="col-12">
             <div className="alert alert-danger">
               Error loading leave balances: {fetchBalancesError}
             </div>
           </div>
         ) : (
-          <>
-            {balances
-              .filter(balance => balance.daysAvailable > 0)
-              .map((balance) => (
-                <div key={balance.leaveType} className="col-md-4 col-lg-2 mb-3">
-                  <div className="card shadow-sm h-100" style={{ backgroundColor: balance.colorCode, color: '#fff' }}>
-                    <div className="card-body d-flex flex-column">
-                      <h6 className="card-title mb-3">{balance.name}</h6>
-                      <div className="mt-auto text-center">
-                        <h3 className="mb-1">{balance.daysAvailable}</h3>
-                        <div className="small mb-2">Available</div>
-                        <div className="small opacity-75">
-                          {balance.daysAvailable} of {balance.daysAllowed} days
+          <div className="col-12">
+            <div className="d-flex gap-3">
+              {balances
+                .filter(balance => balance.daysAvailable > 0)
+                .map((balance) => (
+                  <div key={balance.leaveType} className="flex-grow-1">
+                    <div className="card shadow-sm h-100" style={{ 
+                      backgroundColor: balance.colorCode, 
+                      color: '#fff',
+                      minHeight: '120px'
+                    }}>
+                      <div className="card-body d-flex flex-column justify-content-center p-3">
+                        <h6 className="card-title mb-2">{balance.name}</h6>
+                        <div className="text-center">
+                          <h3 className="mb-0">{balance.daysAvailable}</h3>
+                          <div className="small opacity-75">
+                            of {balance.daysAllowed} days
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-          </>
+                ))}
+            </div>
+          </div>
         )}
       </div>
 
       <div className="row">
         <div className="col-md-8">
-          <div className="card shadow-sm">
-            <div className="card-header">
-              <h5 className="mb-0" style={{ color: '#184C55' }}>{activityIcon}{activityTitle}</h5>
+          <div className="card shadow-sm mb-4">
+            <div className="card-header py-2" style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #184C55' }}>
+              <h6 className="mb-0 d-flex align-items-center" style={{ color: '#184C55' }}>
+                {activityIcon}
+                <span className="fw-bold">{activityTitle}</span>
+                <span className="ms-2 badge rounded-pill" style={{ backgroundColor: '#184C55', fontSize: '0.65em' }}>
+                  {relevantLeaves.length} Records
+                </span>
+              </h6>
             </div>
-            <div className="card-body">
-              {fetchHistoryStatus === 'loading' && <div>Loading leave data...</div>}
-              {fetchHistoryError && <div className="alert alert-danger">Error loading leave data: {fetchHistoryError}</div>}
+            <div className="card-body p-0">
+              {fetchHistoryStatus === 'loading' && (
+                <div className="text-center py-3">
+                  <Spinner animation="border" role="status" style={{ color: '#184C55' }}>
+                    <span className="visually-hidden">Loading leave data...</span>
+                  </Spinner>
+                </div>
+              )}
+              {fetchHistoryError && (
+                <div className="alert alert-danger m-2">
+                  <i className="fas fa-exclamation-circle me-2"></i>
+                  Error loading leave data: {fetchHistoryError}
+                </div>
+              )}
               {fetchHistoryStatus === 'succeeded' && (
                 <div className="table-responsive">
-                  <table className="table table-striped table-hover">
-                    <thead>
-                      <tr>
-                        {isAdminOrHR && <th>Employee</th>}
-                        <th>Type</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Days</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                  <table className="table table-sm align-middle mb-0">
+                    <thead style={{ borderBottom: '1px solid #dee2e6' }}>
+                      <tr className="align-middle small">
+                        {isAdminOrHR && (
+                          <th className="px-2 py-2 fw-bold">
+                            Employee
+                          </th>
+                        )}
+                        <th className="px-2 py-2 fw-bold">
+                          Type
+                        </th>
+                        <th className="px-2 py-2 fw-bold">
+                          Start
+                        </th>
+                        <th className="px-2 py-2 fw-bold">
+                          End
+                        </th>
+                        <th className="px-2 py-2 fw-bold">
+                          Days
+                        </th>
+                        <th className="px-2 py-2 fw-bold">
+                          Status
+                        </th>
+                        <th className="px-2 py-2 fw-bold text-center">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {relevantLeaves.length > 0 ? (
                         relevantLeaves.map((leave) => (
-                          <tr key={leave.id}>
-                            {isAdminOrHR && 
-                              <td>{leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'N/A'}</td>
-                            }
-                            <td>{leave.type}</td>
-                            <td>{formatDate(leave.startDate)}</td>
-                            <td>{formatDate(leave.endDate)}</td>
-                            <td>{calculateDaysTaken(leave.startDate, leave.endDate, leave.leaveDuration)}</td>
-                            <td>
-                              <span className={`badge bg-${leave.status === 'APPROVED' ? 'success' : leave.status === 'PENDING' ? 'warning' : 'danger'}`}>
-                                {leave.status}
+                          <tr key={leave.id} className="align-middle small">
+                            {isAdminOrHR && (
+                              <td className="px-2 py-2 fw-medium">
+                                {leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'N/A'}
+                              </td>
+                            )}
+                            <td className="px-2 py-2">
+                              <Badge
+                                style={{
+                                  backgroundColor: getLeaveTypeColor(leave.type),
+                                  padding: '3px 6px',
+                                  fontSize: '0.7em'
+                                }}
+                              >
+                                {leave.type}
+                              </Badge>
+                            </td>
+                            <td className="px-2 py-2 text-secondary">
+                              {formatDate(leave.startDate)}
+                            </td>
+                            <td className="px-2 py-2 text-secondary">
+                              {formatDate(leave.endDate)}
+                            </td>
+                            <td className="px-2 py-2">
+                              <span className="fw-medium" style={{ color: '#184C55' }}>
+                                {calculateDaysTaken(leave.startDate, leave.endDate, leave.leaveDuration)}
                               </span>
                             </td>
-                            <td>
-                              {isAdminOrHR && leave.status === 'PENDING' ? (
-                                <>
+                            <td className="px-2 py-2">
+                              <Badge 
+                                bg={leave.status === 'APPROVED' ? 'success' : 
+                                   leave.status === 'PENDING' ? 'warning' : 'danger'}
+                                style={{ padding: '3px 6px', fontSize: '0.7em' }}
+                              >
+                                {leave.status}
+                              </Badge>
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              <div className="d-flex gap-1 justify-content-center">
+                                {isAdminOrHR && leave.status === 'PENDING' ? (
+                                  <>
+                                    <Button
+                                      variant="outline-success"
+                                      size="sm"
+                                      className="p-1 d-inline-flex align-items-center justify-content-center"
+                                      style={{ width: '24px', height: '24px' }}
+                                      onClick={() => handleApproveReject(leave.id, 'approve')}
+                                      title="Approve"
+                                    >
+                                      <FaCheck size={10} />
+                                    </Button>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      className="p-1 d-inline-flex align-items-center justify-content-center"
+                                      style={{ width: '24px', height: '24px' }}
+                                      onClick={() => handleApproveReject(leave.id, 'reject')}
+                                      title="Reject"
+                                    >
+                                      <FaTimes size={10} />
+                                    </Button>
+                                  </>
+                                ) : (
                                   <Button
-                                    variant="outline-success"
+                                    variant="outline-info"
                                     size="sm"
-                                    className="me-1"
-                                    onClick={() => handleApproveReject(leave.id, 'approve')}
+                                    className="p-1 d-inline-flex align-items-center justify-content-center"
+                                    style={{ width: '24px', height: '24px' }}
+                                    onClick={() => handleViewDetails(leave)}
+                                    title="View Details"
                                   >
-                                    <FaCheck />
+                                    <FaEye size={10} />
                                   </Button>
-                                  <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    className="me-1"
-                                    onClick={() => handleApproveReject(leave.id, 'reject')}
-                                  >
-                                    <FaTimes />
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleViewDetails(leave)}
-                                  style={{ 
-                                    color: '#184C55', 
-                                    borderColor: '#184C55',
-                                    backgroundColor: 'transparent'
-                                  }}
-                                >
-                                  <FaEye />
-                                </Button>
-                              )}
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={isAdminOrHR ? 7 : 6} className="text-center text-muted">
-                            No leave requests found.
+                          <td colSpan={isAdminOrHR ? 7 : 6} className="text-center py-3 text-muted small">
+                            <div className="d-flex flex-column align-items-center">
+                              <FaCalendarAlt size={18} className="mb-1" style={{ color: '#184C55' }} />
+                              <p className="mb-0">No leave requests found.</p>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -305,16 +516,37 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+          
+          {/* Monthly Leave Trend Chart */}
+          <div className="card shadow-sm mb-4">
+            <div className="card-header">
+              <h5 className="mb-0" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Leave Analytics</h5>
+            </div>
+            <div className="card-body">
+              {fetchHistoryStatus === 'loading' ? (
+                <div className="text-center py-4">
+                  <Spinner animation="border" role="status" style={{ color: '#184C55' }}>
+                    <span className="visually-hidden">Loading chart data...</span>
+                  </Spinner>
+                </div>
+              ) : fetchHistoryError ? (
+                <div className="alert alert-danger">Error loading chart data: {fetchHistoryError}</div>
+              ) : (
+                <div style={{ height: '300px' }}>
+                  <Bar options={barOptions} data={getMonthlyLeaveTrend()} />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="col-md-4">
-          <div className="card shadow-sm">
+          <div className="card shadow-sm mb-4">
             <div className="card-header d-flex justify-content-between align-items-center">
               <h6 className="mb-0" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Upcoming Holidays</h6>
               <div className="d-flex gap-2">
                 {isAdminOrHR && (
                   <Button variant="outline-success" size="sm" onClick={openHolidayModal} className="me-2">
-                    {/* <FaPlus className="me-1" /> */}
                     Add
                   </Button>
                 )}
@@ -327,9 +559,8 @@ const Dashboard = () => {
                     backgroundColor: 'transparent'
                   }}
                 >
-                  {/* <FaCalendarAlt className="me-1" /> */}
-                  View All
-                </Button>
+                    View All
+                  </Button>
               </div>
             </div>
             <div className="card-body">
@@ -355,6 +586,28 @@ const Dashboard = () => {
                     <p className="text-muted mb-0">No upcoming holidays in the next 30 days.</p>
                   )}
                 </>
+              )}
+            </div>
+          </div>
+          
+          {/* Leave Type Distribution Chart */}
+          <div className="card shadow-sm">
+            <div className="card-header">
+              <h6 className="mb-0" style={{ color: '#184C55' }}><FaUserFriends className="me-2" />Leave Distribution</h6>
+            </div>
+            <div className="card-body">
+              {fetchHistoryStatus === 'loading' ? (
+                <div className="text-center py-4">
+                  <Spinner animation="border" role="status" style={{ color: '#184C55' }}>
+                    <span className="visually-hidden">Loading chart data...</span>
+                  </Spinner>
+                </div>
+              ) : fetchHistoryError ? (
+                <div className="alert alert-danger">Error loading chart data: {fetchHistoryError}</div>
+              ) : (
+                <div style={{ height: '300px' }}>
+                  <Pie options={pieOptions} data={getLeaveTypeDistribution()} />
+                </div>
               )}
             </div>
           </div>
@@ -493,6 +746,29 @@ const Dashboard = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h5 className="mb-0">Team Leave Activities</h5>
+        <div>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            className="me-2"
+            onClick={() => navigate('/leave-policies')}
+          >
+            <i className="bi bi-gear me-1"></i>
+            Manage Leave Policies
+          </Button>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={() => navigate('/holidays')}
+          >
+            <i className="bi bi-calendar-event me-1"></i>
+            Manage Holidays
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

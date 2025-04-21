@@ -95,22 +95,35 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
   };
 
   return (
-    <Modal show={isOpen} onHide={onClose} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>{holiday ? 'Edit Holiday' : 'Create New Holiday'}</Modal.Title>
+    <Modal show={isOpen} onHide={onClose} centered className="holiday-modal">
+      <Modal.Header closeButton className="border-0 pb-0">
+        <Modal.Title className="w-100">
+          <h4 className="mb-0" style={{ color: '#184C55' }}>
+            {holiday ? 'Edit Holiday' : 'Create New Holiday'}
+          </h4>
+          <small className="text-muted">Fill in the holiday details below</small>
+        </Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
-        <Modal.Body>
+        <Modal.Body className="pt-4">
           {status === 'failed' && error && (
-            <Alert variant="danger">Error: {error}</Alert>
+            <Alert variant="danger" className="mb-4">
+              <i className="fas fa-exclamation-circle me-2"></i>
+              {error}
+            </Alert>
           )}
           {status === 'succeeded' && (
-            <Alert variant="success">Holiday {holiday ? 'updated' : 'created'} successfully!</Alert>
+            <Alert variant="success" className="mb-4">
+              <i className="fas fa-check-circle me-2"></i>
+              Holiday {holiday ? 'updated' : 'created'} successfully!
+            </Alert>
           )}
 
           <fieldset disabled={status === 'loading'}>
-            <Form.Group className="mb-3" controlId="formHolidayName">
-              <Form.Label>Holiday Name <span className="text-danger">*</span></Form.Label>
+            <Form.Group className="mb-4" controlId="formHolidayName">
+              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                Holiday Name <span className="text-danger">*</span>
+              </Form.Label>
               <Form.Control
                 type="text"
                 name="name"
@@ -118,22 +131,38 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
                 onChange={handleInputChange}
                 placeholder="Enter holiday name"
                 required
+                className="form-control-lg border-2"
+                style={{ borderColor: '#184C55' }}
               />
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formHolidayDate">
-              <Form.Label>Date <span className="text-danger">*</span></Form.Label>
-              <Form.Control
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
+            <Form.Group className="mb-4" controlId="formHolidayDate">
+              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                Date <span className="text-danger">*</span>
+              </Form.Label>
+              <div className="date-picker-wrapper border-2 rounded" style={{ 
+                borderColor: '#184C55',
+                backgroundColor: 'white',
+                position: 'relative'
+              }}>
+                <Form.Control
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  required
+                  className="form-control-lg border-0"
+                />
+                <div className="position-absolute" style={{ right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                  <i className="fas fa-calendar-alt" style={{ color: '#184C55' }}></i>
+                </div>
+              </div>
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formHolidayDescription">
-              <Form.Label>Description</Form.Label>
+            <Form.Group className="mb-4" controlId="formHolidayDescription">
+              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                Description
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -141,33 +170,50 @@ const CreateHolidayModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, holid
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter holiday description"
+                className="form-control-lg border-2"
+                style={{ borderColor: '#184C55' }}
               />
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formHolidayRecurring">
+            <Form.Group className="mb-4" controlId="formHolidayRecurring">
               <Form.Check
                 type="checkbox"
                 name="recurring"
                 checked={formData.recurring}
                 onChange={handleInputChange}
-                label="Recurring yearly"
+                label={
+                  <span className="fw-medium" style={{ color: '#184C55' }}>
+                    Recurring yearly
+                  </span>
+                }
+                className="custom-checkbox"
               />
             </Form.Group>
           </fieldset>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={onClose} disabled={status === 'loading'}>
+        <Modal.Footer className="border-0 pt-0">
+          <Button 
+            variant="outline-secondary" 
+            onClick={onClose} 
+            disabled={status === 'loading'}
+            className="px-4"
+          >
             Cancel
           </Button>
           <Button 
             type="submit" 
             variant="primary" 
             disabled={status === 'loading'}
-            style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+            className="px-4"
+            style={{ 
+              backgroundColor: '#184C55', 
+              borderColor: '#184C55',
+              minWidth: '140px'
+            }}
           >
             {status === 'loading' ? (
               <>
-                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-1" />
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
                 {holiday ? 'Updating...' : 'Creating...'}
               </>
             ) : (

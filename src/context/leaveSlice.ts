@@ -119,6 +119,7 @@ export const registerEmployee = createAsyncThunk(
     try {
       // Update the endpoint URL here
       const response = await api.post<Employee>('/auth/register', employeeData);
+      console.log(response.data);
       return response.data;
     } catch (error: unknown) {
       let errorMessage = 'Failed to register employee';

@@ -22,11 +22,12 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
     lastName: '',
     department: '',
     position: '',
+    role: 'STAFF',
   };
   const [formData, setFormData] = useState<RegisterEmployeePayload>(initialFormData);
 
   // --- Handlers ---
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -53,133 +54,212 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
   }, [registrationStatus, handleClose]); // useEffect dependency is now stable
 
   return (
-    <Modal show={isOpen} onHide={handleClose} centered size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Register New Employee</Modal.Title>
+    <Modal show={isOpen} onHide={handleClose} centered size="lg" className="employee-modal">
+      <Modal.Header closeButton className="border-0 pb-0">
+        <Modal.Title className="w-100">
+          <h4 className="mb-0" style={{ color: '#184C55' }}>Register New Employee</h4>
+          <small className="text-muted">Fill in the employee details below</small>
+        </Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
-        <Modal.Body>
+        <Modal.Body className="pt-4">
           {registrationStatus === 'failed' && registrationError && (
-            <Alert variant="danger">Error: {registrationError}</Alert>
+            <Alert variant="danger" className="mb-4">
+              <i className="fas fa-exclamation-circle me-2"></i>
+              {registrationError}
+            </Alert>
           )}
           {registrationStatus === 'succeeded' && (
-            <Alert variant="success">Employee registered successfully!</Alert>
+            <Alert variant="success" className="mb-4">
+              <i className="fas fa-check-circle me-2"></i>
+              Employee registered successfully!
+            </Alert>
           )}
 
           <fieldset disabled={registrationStatus === 'loading'}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formUsername">
-                  <Form.Label>Username <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    placeholder="Enter username"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formPassword">
-                  <Form.Label>Password <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter initial password"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+            <div className="mb-4">
+              <h6 className="mb-3" style={{ color: '#184C55' }}>Account Information</h6>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formUsername">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Username <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      placeholder="Enter username"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formPassword">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Password <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Enter initial password"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <Form.Group className="mb-3" controlId="formEmail">
-              <Form.Label>Email Address <span className="text-danger">*</span></Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="e.g., employee@africahr.com"
-                required
-              />
-            </Form.Group>
+              <Form.Group className="mb-3" controlId="formEmail">
+                <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                  Email Address <span className="text-danger">*</span>
+                </Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="e.g., employee@africahr.com"
+                  required
+                  className="form-control-lg border-2"
+                  style={{ borderColor: '#184C55' }}
+                />
+              </Form.Group>
+            </div>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formFirstName">
-                  <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    placeholder="Enter first name"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formLastName">
-                  <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    placeholder="Enter last name"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+            <div className="mb-4">
+              <h6 className="mb-3" style={{ color: '#184C55' }}>Personal Information</h6>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formFirstName">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      First Name <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      placeholder="Enter first name"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formLastName">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Last Name <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      placeholder="Enter last name"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </div>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formDepartment">
-                  <Form.Label>Department <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="department"
-                    value={formData.department}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Human Resources, IT"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formPosition">
-                  <Form.Label>Position <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="position"
-                    value={formData.position}
-                    onChange={handleInputChange}
-                    placeholder="e.g., HR Manager, Software Developer"
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+            <div className="mb-4">
+              <h6 className="mb-3" style={{ color: '#184C55' }}>Employment Details</h6>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formDepartment">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Department <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Human Resources, IT"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formPosition">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Position <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="position"
+                      value={formData.position}
+                      onChange={handleInputChange}
+                      placeholder="e.g., HR Manager, Software Developer"
+                      required
+                      className="form-control-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <small className="text-muted"><span className="text-danger">*</span> Required fields</small>
+              <Form.Group className="mb-3" controlId="formRole">
+                <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                  Role <span className="text-danger">*</span>
+                </Form.Label>
+                <Form.Select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  required
+                  className="form-select-lg border-2"
+                  style={{ borderColor: '#184C55' }}
+                >
+                  <option value="STAFF">Staff</option>
+                  <option value="HR_MANAGER">HR Manager</option>
+                  <option value="ADMIN">Admin</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
 
+            <small className="text-muted d-block mb-4">
+              <i className="fas fa-info-circle me-1"></i>
+              <span className="text-danger">*</span> Required fields
+            </small>
           </fieldset>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={handleClose} disabled={registrationStatus === 'loading'}>
+        <Modal.Footer className="border-0 pt-0">
+          <Button 
+            variant="outline-secondary" 
+            onClick={handleClose} 
+            disabled={registrationStatus === 'loading'}
+            className="px-4"
+          >
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={registrationStatus === 'loading' || registrationStatus === 'succeeded'}
-          style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+          <Button 
+            type="submit" 
+            variant="primary" 
+            disabled={registrationStatus === 'loading' || registrationStatus === 'succeeded'}
+            className="px-4"
+            style={{ 
+              backgroundColor: '#184C55', 
+              borderColor: '#184C55',
+              minWidth: '160px'
+            }}
           >
             {registrationStatus === 'loading' ? (
               <>
-                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-1" />
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
                 Registering...
               </>
             ) : (
