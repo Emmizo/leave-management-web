@@ -16,7 +16,6 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const initialFormData: RegisterEmployeePayload = {
     username: '',
-    password: '',
     email: '',
     firstName: '',
     lastName: '',
@@ -98,16 +97,16 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3" controlId="formPassword">
+                  <Form.Group className="mb-3" controlId="formEmail">
                     <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                      Password <span className="text-danger">*</span>
+                      Email Address <span className="text-danger">*</span>
                     </Form.Label>
                     <Form.Control
-                      type="password"
-                      name="password"
-                      value={formData.password}
+                      type="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="Enter initial password"
+                      placeholder="e.g., employee@africahr.com"
                       required
                       className="form-control-lg border-2"
                       style={{ borderColor: '#184C55' }}
@@ -115,22 +114,6 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   </Form.Group>
                 </Col>
               </Row>
-
-              <Form.Group className="mb-3" controlId="formEmail">
-                <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                  Email Address <span className="text-danger">*</span>
-                </Form.Label>
-                <Form.Control
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="e.g., employee@africahr.com"
-                  required
-                  className="form-control-lg border-2"
-                  style={{ borderColor: '#184C55' }}
-                />
-              </Form.Group>
             </div>
 
             <div className="mb-4">

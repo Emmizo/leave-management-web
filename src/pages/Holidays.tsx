@@ -115,8 +115,8 @@ const Holidays: React.FC = () => {
                 <tr>
                   <th className="py-3 px-3 fw-bold">Name</th>
                   <th className="py-3 px-3 fw-bold">Date</th>
-                  <th className="py-3 px-3 fw-bold">Type</th>
-                  <th className="py-3 px-3 fw-bold text-center">Actions</th>
+                  {isAdminOrHR && <th className="py-3 px-3 fw-bold">Type</th>}
+                  {isAdminOrHR && <th className="py-3 px-3 fw-bold text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -124,35 +124,39 @@ const Holidays: React.FC = () => {
                   <tr key={holiday.id}>
                     <td className="py-3 px-3">{holiday.name}</td>
                     <td className="py-3 px-3">{formatDate(holiday.date)}</td>
-                    <td className="py-3 px-3">
-                      <Badge bg={holiday.recurring ? 'info' : 'secondary'} style={{ fontSize: '0.8em', padding: '0.4em 0.7em' }}>
-                        {holiday.recurring ? 'Recurring' : 'One-time'}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <div className="d-flex gap-2 justify-content-center">
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="p-1 d-inline-flex align-items-center justify-content-center"
-                          style={{ width: '30px', height: '30px' }}
-                          onClick={() => handleOpenModal(holiday)} // Corrected: Pass holiday to edit
-                          title="Edit Holiday"
-                        >
-                          <FaEdit size={14} />
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="p-1 d-inline-flex align-items-center justify-content-center"
-                          style={{ width: '30px', height: '30px' }}
-                          onClick={() => setHolidayToDelete(holiday.id)}
-                          title="Delete Holiday"
-                        >
-                          <FaTrash size={14} />
-                        </Button>
-                      </div>
-                    </td>
+                    {isAdminOrHR && (
+                      <td className="py-3 px-3">
+                        <Badge bg={holiday.recurring ? 'info' : 'secondary'} style={{ fontSize: '0.8em', padding: '0.4em 0.7em' }}>
+                          {holiday.recurring ? 'Recurring' : 'One-time'}
+                        </Badge>
+                      </td>
+                    )}
+                    {isAdminOrHR && (
+                      <td className="py-3 px-3 text-center">
+                        <div className="d-flex gap-2 justify-content-center">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="p-1 d-inline-flex align-items-center justify-content-center"
+                            style={{ width: '30px', height: '30px' }}
+                            onClick={() => handleOpenModal(holiday)}
+                            title="Edit Holiday"
+                          >
+                            <FaEdit size={14} />
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="p-1 d-inline-flex align-items-center justify-content-center"
+                            style={{ width: '30px', height: '30px' }}
+                            onClick={() => setHolidayToDelete(holiday.id)}
+                            title="Delete Holiday"
+                          >
+                            <FaTrash size={14} />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

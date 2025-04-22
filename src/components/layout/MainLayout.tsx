@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaUserCircle, FaTimes } from 'react-icons/fa';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaUserCircle, FaTimes, FaKey } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../context/authSlice';
 import { AppDispatch, RootState } from '../../context/store';
+import ChangePasswordModal from '../dashboard/ChangePasswordModal';
+import { Dropdown } from 'react-bootstrap';
 import './MainLayout.css';
 
 interface MenuItem {
@@ -15,7 +17,9 @@ interface MenuItem {
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -175,24 +179,49 @@ const MainLayout = () => {
               </span>
               <small className="text-muted">{user?.position || 'Position'}</small>
             </div>
-            <Link to="/profile" className="text-decoration-none">
-              {user?.profilePicture ? (
-                <img 
-                  src={user.profilePicture} 
-                  alt="Profile" 
-                  className="rounded-circle" 
-                  style={{ 
-                    width: isMobile ? '35px' : '45px', 
-                    height: isMobile ? '35px' : '45px', 
-                    objectFit: 'cover', 
-                    border: '2px solid #184C55',
-                    cursor: 'pointer'
+            <Dropdown align="end">
+              <Dropdown.Toggle 
+                variant="link" 
+                id="dropdown-profile" 
+                className="p-0 border-0 shadow-none"
+                style={{ color: '#184C55' }}
+              >
+                {user?.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="rounded-circle" 
+                    style={{ 
+                      width: isMobile ? '35px' : '45px', 
+                      height: isMobile ? '35px' : '45px', 
+                      objectFit: 'cover', 
+                      border: '2px solid #184C55',
+                    }}
+                  />
+                ) : (
+                  <FaUserCircle size={isMobile ? 35 : 45} />
+                )}
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu style={{ minWidth: '200px' }}>
+                <Dropdown.Item as={Link} to="/profile">
+                  <FaUser className="me-2" /> Profile
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => setShowChangePassword(true)}>
+                  <FaKey className="me-2" /> Change Password
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item 
+                  onClick={() => {
+                    dispatch(logout());
+                    navigate('/login');
                   }}
-                />
-              ) : (
-                <FaUserCircle size={isMobile ? 35 : 45} style={{ color: '#184C55', cursor: 'pointer' }} />
-              )}
-            </Link>
+                  className="text-danger"
+                >
+                  <FaSignOutAlt className="me-2" /> Logout
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
           </div>
         </div>
 
@@ -201,6 +230,12 @@ const MainLayout = () => {
           <Outlet />
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 };

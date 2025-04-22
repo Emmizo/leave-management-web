@@ -3,7 +3,6 @@
 // Payload for registering a new employee
 export interface RegisterEmployeePayload {
   username: string;
-  password: string;
   email: string;
   firstName: string;
   lastName: string;
