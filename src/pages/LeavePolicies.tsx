@@ -33,7 +33,7 @@ const LeavePolicies: React.FC = () => {
   const [formData, setFormData] = useState<Omit<LeavePolicy, 'id'>>({
     name: '',
     description: '',
-    daysPerYear: 0,
+    daysPerMonth: 0,
     carryForwardDays: 0,
     maxConsecutiveDays: 0,
     minNoticeDays: 0,
@@ -58,7 +58,7 @@ const LeavePolicies: React.FC = () => {
       setFormData({
         name: selectedPolicy.name,
         description: selectedPolicy.description,
-        daysPerYear: selectedPolicy.daysPerYear,
+        daysPerMonth: selectedPolicy.daysPerMonth,
         carryForwardDays: selectedPolicy.carryForwardDays,
         maxConsecutiveDays: selectedPolicy.maxConsecutiveDays,
         minNoticeDays: selectedPolicy.minNoticeDays,
@@ -115,7 +115,7 @@ const LeavePolicies: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      daysPerYear: 0,
+      daysPerMonth: 0,
       carryForwardDays: 0,
       maxConsecutiveDays: 0,
       minNoticeDays: 0,
@@ -197,7 +197,7 @@ const LeavePolicies: React.FC = () => {
                   <thead>
                     <tr>
                       <th className="py-3">Name</th>
-                      <th className="py-3">Days/Year</th>
+                      <th className="py-3">Days/Month</th>
                       <th className="py-3">Carry Forward</th>
                       <th className="py-3">Max Consecutive Days</th>
                       <th className="py-3">Notice Days</th>
@@ -210,7 +210,7 @@ const LeavePolicies: React.FC = () => {
                     {policies.map((policy: LeavePolicy) => (
                       <tr key={policy.id}>
                         <td className="py-3">{policy.name}</td>
-                        <td className="py-3">{policy.daysPerYear}</td>
+                        <td className="py-3">{policy.daysPerMonth}</td>
                         <td className="py-3">{policy.carryForwardDays}</td>
                         <td className="py-3">{policy.maxConsecutiveDays}</td>
                         <td className="py-3">{policy.minNoticeDays}</td>
@@ -290,8 +290,8 @@ const LeavePolicies: React.FC = () => {
               </div>
               <div className="row mb-3">
                 <div className="col-md-6">
-                  <h6 className="text-muted">Days Per Year</h6>
-                  <p className="fw-medium">{selectedPolicy.daysPerYear}</p>
+                  <h6 className="text-muted">Days Per Month</h6>
+                  <p className="fw-medium">{selectedPolicy.daysPerMonth}</p>
                 </div>
                 <div className="col-md-6">
                   <h6 className="text-muted">Carry Forward Days</h6>
@@ -413,20 +413,21 @@ const LeavePolicies: React.FC = () => {
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Days Per Year</Form.Label>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Days Per Month</Form.Label>
                       <Form.Control
                         type="number"
-                        name="daysPerYear"
-                        value={formData.daysPerYear}
+                        name="daysPerMonth"
+                        value={formData.daysPerMonth}
                         onChange={handleInputChange}
                         required
                         min={0}
-                        placeholder="0"
+                        step="0.01"
+                        placeholder="0.00"
                         className="form-control-lg border-2"
                         style={{ borderColor: '#184C55' }}
                       />
                       <Form.Text className="text-muted">
-                        Maximum number of days allowed per year
+                        Maximum number of days allowed per month (e.g., 1.66 for 20 days per year)
                       </Form.Text>
                     </Form.Group>
                   </Col>

@@ -4,7 +4,7 @@ export interface LeavePolicy {
   id: number;
   name: string;
   description: string;
-  daysPerYear: number;
+  daysPerMonth: number;
   carryForwardDays: number;
   maxConsecutiveDays: number;
   minNoticeDays: number;
