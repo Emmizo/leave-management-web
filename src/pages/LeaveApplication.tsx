@@ -7,6 +7,7 @@ import { Alert, Card, Form, Button, Row, Col } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import { selectAllLeavePolicies } from '../context/leavePolicySlice';
 
 interface LeaveFormData {
   leaveType: string;
@@ -31,11 +32,13 @@ const LeaveApplication = () => {
   const navigate = useNavigate();
   const { status, error } = useSelector((state: RootState) => state.leaves);
   const { user } = useSelector((state: RootState) => state.auth);
+  const policies = useSelector(selectAllLeavePolicies);
 
   const [formData, setFormData] = useState<LeaveFormData>(initialFormData);
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [maxConsecutiveDaysError, setMaxConsecutiveDaysError] = useState<string>('');
 
   const calculateNumberOfDays = (startDate: string, endDate: string, duration: 'FULL_DAY' | 'HALF_DAY') => {
     if (!startDate || !endDate) return 0;
@@ -100,8 +103,11 @@ const LeaveApplication = () => {
   const handleDateChange = (date: Date | null, field: 'startDate' | 'endDate') => {
     if (!date) return;
     
-    // Format date as YYYY-MM-DD
-    const formattedDate = date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD using local date components to avoid timezone issues
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = date.getDate().toString().padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
     
     // If start date is changed and leave type is MATERNITY, update end date
     if (field === 'startDate' && formData.leaveType === 'MATERNITY') {
@@ -121,6 +127,52 @@ const LeaveApplication = () => {
       ...prev,
       [field]: formattedDate
     }));
+
+    // Check for maximum consecutive days limit
+    if (formData.leaveType) { // Check only if leave type is selected
+      // Get the date objects, ensuring the one from state is potentially valid
+      const currentStartDateStr = field === 'startDate' ? formattedDate : formData.startDate;
+      const currentEndDateStr = field === 'endDate' ? formattedDate : formData.endDate;
+
+      // Only proceed if both date strings are non-empty
+      if (currentStartDateStr && currentEndDateStr) {
+        const startDate = new Date(currentStartDateStr);
+        const endDate = new Date(currentEndDateStr);
+
+        // Check if both dates are valid and end date is not before start date
+        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && endDate >= startDate) {
+          console.log('Checking consecutive days:', {
+            startDate: currentStartDateStr,
+            endDate: currentEndDateStr,
+            leaveType: formData.leaveType
+          });
+
+          const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
+          
+          const policy = policies.find(p => p.name === formData.leaveType);
+          console.log('Policy found:', policy);
+          console.log('Calculated days:', diffDays);
+
+          if (policy && policy.maxConsecutiveDays && diffDays > policy.maxConsecutiveDays) {
+            const errorMsg = `Leave request exceeds the maximum consecutive days limit of ${policy.maxConsecutiveDays} days for ${formData.leaveType}.`;
+            console.log('Setting error:', errorMsg);
+            setMaxConsecutiveDaysError(errorMsg);
+          } else {
+            console.log('Clearing error or no policy limit.');
+            setMaxConsecutiveDaysError('');
+          }
+        } else {
+          // Clear error if dates are invalid or end date is before start date
+          console.log('Invalid dates or end date before start date, clearing error.');
+          setMaxConsecutiveDaysError(''); 
+        }
+      } else {
+        // Clear error if one of the dates is missing
+        console.log('One or both dates missing, clearing error.');
+        setMaxConsecutiveDaysError('');
+      }
+    }
   };
 
   useEffect(() => {
@@ -235,8 +287,8 @@ const LeaveApplication = () => {
       navigate('/dashboard');
       
     } catch (err: unknown) {
-      console.error('Failed to create leave:', err);
-      
+      // console.error('Failed to create leave:', err);
+      console.log(maxConsecutiveDaysError);
       // Handle validation errors from the backend
       if (err && typeof err === 'object' && 'validationErrors' in err) {
         const errorObj = err as { validationErrors: Record<string, string> };
@@ -246,7 +298,7 @@ const LeaveApplication = () => {
         const errorObj = err as { message: string };
         toast.error(errorObj.message || 'Failed to submit leave request. Please try again.');
       } else {
-        toast.error('Failed to submit leave request. Please try again.');
+        toast.error(err as string);
       }
     } finally {
       setIsSubmitting(false);
@@ -271,6 +323,12 @@ const LeaveApplication = () => {
         <h4 className="mb-0">Apply for Leave</h4>
       </Card.Header>
       <Card.Body className="p-4">
+        {maxConsecutiveDaysError && (
+          <Alert variant="danger" className="mb-4">
+            {maxConsecutiveDaysError}
+          </Alert>
+        )}
+
         {error && (
           <Alert variant="danger" className="mb-4">
             {error}

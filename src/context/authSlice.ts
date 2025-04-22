@@ -108,9 +108,17 @@ export const fetchUserProfile = createAsyncThunk(
 // Async Thunk for Updating User Profile
 export const updateProfile = createAsyncThunk(
   'auth/updateProfile',
-  async (profileData: Partial<Employee>, { rejectWithValue }) => {
+  async (profileData: Partial<Employee>, { rejectWithValue, getState }) => {
+    const state = getState() as { auth: AuthState };
+    if (!state.auth.token) {
+      return rejectWithValue('No authentication token found');
+    }
     try {
-      const response = await api.put<ProfileResponse>('/profile', profileData);
+      const response = await api.put<ProfileResponse>('/profile', profileData, {
+        headers: {
+          Authorization: `Bearer ${state.auth.token}`
+        }
+      });
       return response.data;
     } catch (error: unknown) {
       let errorMessage = 'Failed to update profile';

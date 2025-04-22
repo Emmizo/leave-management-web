@@ -14,12 +14,10 @@ import {
 } from '../context/leavePolicySlice';
 import { AppDispatch, RootState } from '../context/store';
 import { FaEye, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 
 const LeavePolicies: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
-  const policies = useSelector(selectAllLeavePolicies);
+  const policies = useSelector(selectAllLeavePolicies) || [];
   const status = useSelector(selectLeavePolicyStatus);
   const error = useSelector(selectLeavePolicyError);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -43,19 +41,17 @@ const LeavePolicies: React.FC = () => {
     active: true
   });
 
-  // Redirect non-admin/HR users to dashboard
+  // Fetch policies for all users
   useEffect(() => {
-    if (user && !isAdminOrHR) {
-      toast.error('You do not have permission to access this page');
-      navigate('/dashboard');
-    }
-  }, [user, isAdminOrHR, navigate]);
-
-  useEffect(() => {
-    if (isAdminOrHR) {
-      dispatch(fetchLeavePolicies());
-    }
-  }, [dispatch, isAdminOrHR]);
+    const fetchPolicies = async () => {
+      try {
+        await dispatch(fetchLeavePolicies()).unwrap();
+      } catch (err) {
+        console.error('Failed to fetch policies:', err);
+      }
+    };
+    fetchPolicies();
+  }, [dispatch]);
 
   useEffect(() => {
     if (selectedPolicy) {
@@ -129,6 +125,7 @@ const LeavePolicies: React.FC = () => {
   };
 
   const handleViewDetails = (policy: LeavePolicy) => {
+    console.log(policy);
     setSelectedPolicy(policy);
     setShowDetailsModal(true);
   };
@@ -165,27 +162,6 @@ const LeavePolicies: React.FC = () => {
     );
   }
 
-  // Show access denied message for non-admin/HR users
-  if (!isAdminOrHR) {
-    return (
-      <Container className="py-4">
-        <Card className="shadow-sm">
-          <Card.Body className="text-center py-5">
-            <h4 className="text-danger mb-3">Access Denied</h4>
-            <p className="text-muted">You do not have permission to access this page.</p>
-            <Button 
-              variant="outline-primary" 
-              onClick={() => navigate('/dashboard')}
-              style={{ borderColor: '#184C55', color: '#184C55' }}
-            >
-              Return to Dashboard
-            </Button>
-          </Card.Body>
-        </Card>
-      </Container>
-    );
-  }
-
   if (error) {
     toast.error(error);
   }
@@ -197,14 +173,16 @@ const LeavePolicies: React.FC = () => {
           <Card className="shadow-sm">
             <Card.Header className="d-flex justify-content-between align-items-center py-3" style={{ backgroundColor: '#184C55' }}>
               <h5 className="mb-0 text-white">Leave Policies</h5>
-              <Button 
-                variant="light" 
-                size="sm" 
-                onClick={handleAddNew}
-                className="d-flex align-items-center"
-              >
-                <FaPlus className="me-2" /> Add New Policy
-              </Button>
+              {isAdminOrHR && (
+                <Button 
+                  variant="light" 
+                  size="sm" 
+                  onClick={handleAddNew}
+                  className="d-flex align-items-center"
+                >
+                  <FaPlus className="me-2" /> Add New Policy
+                </Button>
+              )}
             </Card.Header>
             <Card.Body>
               {status ? (
@@ -214,80 +192,80 @@ const LeavePolicies: React.FC = () => {
                   </Spinner>
                   <p className="mt-2">Loading leave policies...</p>
                 </div>
-              ) : (
+              ) : Array.isArray(policies) && policies.length > 0 ? (
                 <Table responsive className="table-sm">
                   <thead>
                     <tr>
                       <th className="py-3">Name</th>
                       <th className="py-3">Days/Year</th>
                       <th className="py-3">Carry Forward</th>
-                      <th className="py-3">Max Days</th>
+                      <th className="py-3">Max Consecutive Days</th>
                       <th className="py-3">Notice Days</th>
                       <th className="py-3">Approval</th>
                       <th className="py-3">Status</th>
-                      <th className="py-3">Actions</th>
+                      {isAdminOrHR && <th className="py-3">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {policies.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="text-center py-4">
-                          No leave policies found
+                    {policies.map((policy: LeavePolicy) => (
+                      <tr key={policy.id}>
+                        <td className="py-3">{policy.name}</td>
+                        <td className="py-3">{policy.daysPerYear}</td>
+                        <td className="py-3">{policy.carryForwardDays}</td>
+                        <td className="py-3">{policy.maxConsecutiveDays}</td>
+                        <td className="py-3">{policy.minNoticeDays}</td>
+                        <td className="py-3">
+                          <span className={`badge bg-${policy.requiresApproval ? 'info' : 'warning'}`}>
+                            {policy.requiresApproval ? 'Required' : 'Not Required'}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <span className={`badge bg-${policy.active ? 'success' : 'danger'}`}>
+                            {policy.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <div className="d-flex gap-2">
+                            <Button
+                              variant="outline-info"
+                              size="sm"
+                              onClick={() => handleViewDetails(policy)}
+                              title="View Details"
+                              style={{ borderColor: '#184C55', color: '#184C55' }}
+                            >
+                              <FaEye />
+                            </Button>
+                            {isAdminOrHR && (
+                              <>
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  onClick={() => handleEdit(policy)}
+                                  title="Edit Policy"
+                                  style={{ borderColor: '#184C55', color: '#184C55' }}
+                                >
+                                  <FaEdit />
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(policy.id)}
+                                  title="Delete Policy"
+                                >
+                                  <FaTrash />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    ) : (
-                      policies.map((policy: LeavePolicy) => (
-                        <tr key={policy.id}>
-                          <td className="py-3">{policy.name}</td>
-                          <td className="py-3">{policy.daysPerYear}</td>
-                          <td className="py-3">{policy.carryForwardDays}</td>
-                          <td className="py-3">{policy.maxConsecutiveDays}</td>
-                          <td className="py-3">{policy.minNoticeDays}</td>
-                          <td className="py-3">
-                            <span className={`badge bg-${policy.requiresApproval ? 'info' : 'warning'}`}>
-                              {policy.requiresApproval ? 'Required' : 'Not Required'}
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <span className={`badge bg-${policy.active ? 'success' : 'danger'}`}>
-                              {policy.active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <div className="d-flex gap-2">
-                              <Button
-                                variant="outline-info"
-                                size="sm"
-                                onClick={() => handleViewDetails(policy)}
-                                title="View Details"
-                                style={{ borderColor: '#184C55', color: '#184C55' }}
-                              >
-                                <FaEye />
-                              </Button>
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() => handleEdit(policy)}
-                                title="Edit Policy"
-                                style={{ borderColor: '#184C55', color: '#184C55' }}
-                              >
-                                <FaEdit />
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleDelete(policy.id)}
-                                title="Delete Policy"
-                              >
-                                <FaTrash />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </Table>
+              ) : (
+                <div className="text-center py-4">
+                  No leave policies found
+                </div>
               )}
             </Card.Body>
           </Card>
@@ -296,15 +274,15 @@ const LeavePolicies: React.FC = () => {
 
       {/* Policy Details Modal */}
       <Modal show={showDetailsModal} onHide={handleCloseDetails} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Leave Policy Details</Modal.Title>
+        <Modal.Header closeButton style={{ backgroundColor: '#184C55', color: 'white', borderBottom: 'none' }}>
+          <Modal.Title className="text-white">Leave Policy Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="p-4">
           {selectedPolicy && (
             <div>
               <div className="mb-3">
                 <h6 className="text-muted">Name</h6>
-                <p>{selectedPolicy.name}</p>
+                <p className="fw-medium">{selectedPolicy.name}</p>
               </div>
               <div className="mb-3">
                 <h6 className="text-muted">Description</h6>
@@ -313,21 +291,21 @@ const LeavePolicies: React.FC = () => {
               <div className="row mb-3">
                 <div className="col-md-6">
                   <h6 className="text-muted">Days Per Year</h6>
-                  <p>{selectedPolicy.daysPerYear}</p>
+                  <p className="fw-medium">{selectedPolicy.daysPerYear}</p>
                 </div>
                 <div className="col-md-6">
                   <h6 className="text-muted">Carry Forward Days</h6>
-                  <p>{selectedPolicy.carryForwardDays}</p>
+                  <p className="fw-medium">{selectedPolicy.carryForwardDays}</p>
                 </div>
               </div>
               <div className="row mb-3">
                 <div className="col-md-6">
                   <h6 className="text-muted">Max Consecutive Days</h6>
-                  <p>{selectedPolicy.maxConsecutiveDays}</p>
+                  <p className="fw-medium">{selectedPolicy.maxConsecutiveDays}</p>
                 </div>
                 <div className="col-md-6">
                   <h6 className="text-muted">Min Notice Days</h6>
-                  <p>{selectedPolicy.minNoticeDays}</p>
+                  <p className="fw-medium">{selectedPolicy.minNoticeDays}</p>
                 </div>
               </div>
               <div className="row mb-3">
@@ -348,13 +326,13 @@ const LeavePolicies: React.FC = () => {
                   </p>
                 </div>
               </div>
-              {selectedPolicy.createdAt && (
+              {isAdminOrHR && selectedPolicy.createdAt && (
                 <div className="mb-3">
                   <h6 className="text-muted">Created At</h6>
                   <p>{formatDate(selectedPolicy.createdAt)}</p>
                 </div>
               )}
-              {selectedPolicy.updatedAt && (
+              {isAdminOrHR && selectedPolicy.updatedAt && (
                 <div className="mb-3">
                   <h6 className="text-muted">Updated At</h6>
                   <p>{formatDate(selectedPolicy.updatedAt)}</p>
@@ -364,7 +342,11 @@ const LeavePolicies: React.FC = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseDetails}>
+          <Button 
+            variant="secondary" 
+            onClick={handleCloseDetails}
+            style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+          >
             Close
           </Button>
         </Modal.Footer>

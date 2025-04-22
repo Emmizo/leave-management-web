@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../services/api';
 import axios from 'axios';
 import { LeavePolicy } from '../types/leavePolicy';
 import { RootState } from './store';
@@ -15,30 +16,28 @@ const initialState: LeavePolicyState = {
   error: null,
 };
 
-const API_URL = 'http://localhost:5456/api/leave-policies';
-
 export const fetchLeavePolicies = createAsyncThunk(
   'leavePolicy/fetchAll',
-  async () => {
-    const token = localStorage.getItem('authToken');
-    const response = await axios.get<LeavePolicy[]>(API_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('Fetching leave policies');
+      const response = await api.get<LeavePolicy[]>('/leave-policies');
+      console.log('Leave policies response:', response.data);
+      return response.data;
+    } catch (error: unknown) {
+      console.error('Error fetching leave policies:', error);
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to fetch leave policies');
       }
-    });
-    return response.data;
+      return rejectWithValue('Failed to fetch leave policies');
+    }
   }
 );
 
 export const createLeavePolicy = createAsyncThunk(
   'leavePolicy/create',
   async (policy: Omit<LeavePolicy, 'id'>) => {
-    const token = localStorage.getItem('authToken');
-    const response = await axios.post<LeavePolicy>(API_URL, policy, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await api.post<LeavePolicy>('/leave-policies', policy);
     return response.data;
   }
 );
@@ -46,12 +45,7 @@ export const createLeavePolicy = createAsyncThunk(
 export const updateLeavePolicy = createAsyncThunk(
   'leavePolicy/update',
   async (policy: LeavePolicy) => {
-    const token = localStorage.getItem('authToken');
-    const response = await axios.put<LeavePolicy>(`${API_URL}/${policy.id}`, policy, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await api.put<LeavePolicy>(`/leave-policies/${policy.id}`, policy);
     return response.data;
   }
 );
@@ -59,12 +53,7 @@ export const updateLeavePolicy = createAsyncThunk(
 export const deleteLeavePolicy = createAsyncThunk(
   'leavePolicy/delete',
   async (id: number) => {
-    const token = localStorage.getItem('authToken');
-    await axios.delete(`${API_URL}/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    await api.delete(`/leave-policies/${id}`);
     return id;
   }
 );
@@ -82,10 +71,11 @@ const leavePolicySlice = createSlice({
       .addCase(fetchLeavePolicies.fulfilled, (state, action) => {
         state.loading = false;
         state.policies = action.payload;
+        state.error = null;
       })
       .addCase(fetchLeavePolicies.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch leave policies';
+        state.error = action.payload as string;
       })
       .addCase(createLeavePolicy.pending, (state) => {
         state.loading = true;
