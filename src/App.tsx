@@ -23,6 +23,7 @@ import MicrosoftCallback from './pages/MicrosoftCallback';
 import LeavePolicies from './pages/LeavePolicies';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ManageEmployees from './pages/ManageEmployees'; // Import the new page
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
@@ -47,6 +48,35 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Authenticated (role check removed)
+  return <>{children}</>;
+};
+
+// Helper component for Admin/HR protected routes
+interface AdminHrProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminHrProtectedRoute: React.FC<AdminHrProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, status, user } = useSelector((state: RootState): AuthState => state.auth);
+
+  // Still checking auth?
+  if (status === 'loading' && !isAuthenticated && localStorage.getItem('authToken')) {
+    return <div className="min-vh-100 d-flex justify-content-center align-items-center">Loading...</div>;
+  }
+
+  // Not authenticated?
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check for Admin or HR role
+  const isAdminOrHR = user?.user?.role === 'ADMIN' || user?.user?.role === 'HR_MANAGER';
+  if (!isAdminOrHR) {
+    // Redirect to an unauthorized page or dashboard
+    return <Navigate to="/unauthorized" replace />; 
+  }
+
+  // Authenticated and authorized
   return <>{children}</>;
 };
 
@@ -121,9 +151,19 @@ function App() {
           <Route 
             path="leave-policies" 
             element={
+              // Assuming all authenticated users can see policies
+              // If not, wrap with AdminHrProtectedRoute instead
               <ProtectedRoute>
                 <LeavePolicies />
               </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="manage-employees" 
+            element={
+              <AdminHrProtectedRoute>
+                <ManageEmployees />
+              </AdminHrProtectedRoute>
             } 
           />
           {/* Add other nested routes here */}

@@ -145,6 +145,32 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+// Async Thunk for Updating Profile Picture
+export const updateProfilePicture = createAsyncThunk(
+  'auth/updateProfilePicture',
+  async (formData: FormData, { rejectWithValue, getState }) => {
+    const state = getState() as { auth: AuthState };
+    if (!state.auth.token) {
+      return rejectWithValue('No authentication token found');
+    }
+    try {
+      const response = await api.put<ProfileResponse>('/profile/picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${state.auth.token}`
+        }
+      });
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to update profile picture';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -250,6 +276,20 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload as string;
+      })
+      // Update Profile Picture Reducers
+      .addCase(updateProfilePicture.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(updateProfilePicture.fulfilled, (state, action: PayloadAction<ProfileResponse>) => {
+        state.status = 'succeeded';
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateProfilePicture.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string;
       });

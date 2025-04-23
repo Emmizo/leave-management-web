@@ -1,13 +1,14 @@
 /** @jsxImportSource react */
-import { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Container, Table, Badge, Button, Modal } from 'react-bootstrap';
-import { FaEye, FaTrash, FaFileExport } from 'react-icons/fa';
+import { FaEye, FaTrash, FaFileExport, FaInbox } from 'react-icons/fa';
 import { fetchAllLeaveHistory, deleteLeave } from '../context/leaveSlice';
 import { RootState, AppDispatch } from '../context/store';
 import { Leave } from '../types/auth';
 import { toast } from 'react-toastify';
 import { exportToCSV } from '../utils/exportUtils';
+import { Link } from 'react-router-dom';
 
 const LeaveHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -101,7 +102,16 @@ const LeaveHistory = () => {
       </div>
       {leaveHistory.length === 0 ? (
         <div className="text-center py-5">
-          <p className="text-muted">No leave history found</p>
+          <FaInbox size={50} className="text-muted mb-3" />
+          <h5 className="mb-3">No Leave History Found</h5>
+          <p className="text-muted mb-4">
+            You haven't requested any leave yet. Ready to plan your next break?
+          </p>
+          <Link to="/leave-application">
+            <Button variant="primary" style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}>
+              Apply for Leave
+            </Button>
+          </Link>
         </div>
       ) : (
         <Table responsive className="align-middle">

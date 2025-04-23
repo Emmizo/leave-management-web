@@ -10,6 +10,7 @@ export interface LeavePolicy {
   minNoticeDays: number;
   requiresApproval: boolean;
   active: boolean;
+  exclusionYear?: number;
   createdAt?: string;
   updatedAt?: string;
 }

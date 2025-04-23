@@ -168,7 +168,7 @@ const Login = () => {
                     Remember me
                   </label>
                 </div>
-                <Link to="/forgot-password" className="text-decoration-none">
+                <Link to="/forgot-password" className="text-decoration-none" style={{ color: '#184C55' }}>
                   Forgot Password?
                 </Link>
               </div>
@@ -215,16 +215,7 @@ const Login = () => {
             </div>
           </form>
 
-          {/* Forgot Password Link */}
-          <div className="text-center mt-3">
-            <a 
-              href="#" 
-              className="text-decoration-none" 
-              style={{ color: '#184C55' }}
-            >
-              Forgot password?
-            </a>
-          </div>
+         
         </div>
       </div>
     </div>

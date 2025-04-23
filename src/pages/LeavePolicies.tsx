@@ -37,8 +37,9 @@ const LeavePolicies: React.FC = () => {
     carryForwardDays: 0,
     maxConsecutiveDays: 0,
     minNoticeDays: 0,
-    requiresApproval: true,
-    active: true
+    requiresApproval: false,
+    active: true,
+    exclusionYear: undefined
   });
 
   // Fetch policies for all users
@@ -63,17 +64,35 @@ const LeavePolicies: React.FC = () => {
         maxConsecutiveDays: selectedPolicy.maxConsecutiveDays,
         minNoticeDays: selectedPolicy.minNoticeDays,
         requiresApproval: selectedPolicy.requiresApproval,
-        active: selectedPolicy.active
+        active: selectedPolicy.active,
+        exclusionYear: selectedPolicy.exclusionYear || undefined
       });
     }
   }, [selectedPolicy]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const { checked } = e.target as HTMLInputElement;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      let finalValue: string | number | boolean | undefined;
+      if (name === 'exclusionYear') {
+        if (value === '') {
+          finalValue = undefined;
+        } else {
+          const num = parseInt(value, 10);
+          finalValue = isNaN(num) ? undefined : num;
+        }
+      } else {
+        finalValue = value;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [name]: finalValue,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,8 +138,9 @@ const LeavePolicies: React.FC = () => {
       carryForwardDays: 0,
       maxConsecutiveDays: 0,
       minNoticeDays: 0,
-      requiresApproval: true,
-      active: true
+      requiresApproval: false,
+      active: true,
+      exclusionYear: undefined
     });
   };
 
@@ -203,6 +223,7 @@ const LeavePolicies: React.FC = () => {
                       <th className="py-3">Notice Days</th>
                       <th className="py-3">Approval</th>
                       <th className="py-3">Status</th>
+                      <th className="py-3">Exclusion Year</th>
                       {isAdminOrHR && <th className="py-3">Actions</th>}
                     </tr>
                   </thead>
@@ -210,7 +231,15 @@ const LeavePolicies: React.FC = () => {
                     {policies.map((policy: LeavePolicy) => (
                       <tr key={policy.id}>
                         <td className="py-3">{policy.name}</td>
-                        <td className="py-3">{policy.daysPerMonth}</td>
+                        <td className="py-3">
+                          {policy.name === 'MATERNITY' ? (
+                            <span style={{ backgroundColor: '#fff3cd', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                              {policy.daysPerMonth * 12} (per Year)
+                            </span>
+                          ) : (
+                            policy.daysPerMonth
+                          )}
+                        </td>
                         <td className="py-3">{policy.carryForwardDays}</td>
                         <td className="py-3">{policy.maxConsecutiveDays}</td>
                         <td className="py-3">{policy.minNoticeDays}</td>
@@ -224,6 +253,7 @@ const LeavePolicies: React.FC = () => {
                             {policy.active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
+                        <td className="py-3">{policy.exclusionYear === undefined ? '-' : policy.exclusionYear}</td>
                         <td className="py-3">
                           <div className="d-flex gap-2">
                             <Button
@@ -326,6 +356,12 @@ const LeavePolicies: React.FC = () => {
                   </p>
                 </div>
               </div>
+              <div className="row mb-3">
+                <div className="col-md-6">
+                  <h6 className="text-muted">Exclusion Year</h6>
+                  <p className="fw-medium">{selectedPolicy.exclusionYear === undefined ? 'Not Set' : selectedPolicy.exclusionYear}</p>
+                </div>
+              </div>
               {isAdminOrHR && selectedPolicy.createdAt && (
                 <div className="mb-3">
                   <h6 className="text-muted">Created At</h6>
@@ -413,21 +449,31 @@ const LeavePolicies: React.FC = () => {
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Days Per Month</Form.Label>
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                        {formData.name === 'MATERNITY' ? 'Days Per Year' : 'Days Per Month'}
+                      </Form.Label>
                       <Form.Control
                         type="number"
                         name="daysPerMonth"
-                        value={formData.daysPerMonth}
-                        onChange={handleInputChange}
+                        value={formData.name === 'MATERNITY' ? formData.daysPerMonth * 12 : formData.daysPerMonth}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          setFormData(prev => ({
+                            ...prev,
+                            daysPerMonth: formData.name === 'MATERNITY' ? value / 12 : value
+                          }));
+                        }}
                         required
                         min={0}
-                        step="0.01"
+                        step={formData.name === 'MATERNITY' ? "1" : "0.01"}
                         placeholder="0.00"
                         className="form-control-lg border-2"
                         style={{ borderColor: '#184C55' }}
                       />
                       <Form.Text className="text-muted">
-                        Maximum number of days allowed per month (e.g., 1.66 for 20 days per year)
+                        {formData.name === 'MATERNITY' 
+                          ? 'Total number of days allowed per year'
+                          : 'Maximum number of days allowed per month (e.g., 1.66 for 20 days per year)'}
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -496,43 +542,21 @@ const LeavePolicies: React.FC = () => {
               <div className="mb-4">
                 <h5 className="mb-3" style={{ color: '#184C55' }}>Policy Settings</h5>
                 <Row>
-                  <Col md={6}>
+                  <Col md={12}>
                     <Form.Group className="mb-3">
-                      <Form.Check
-                        type="switch"
-                        id="requiresApproval"
-                        name="requiresApproval"
-                        label={
-                          <span className="fw-medium" style={{ color: '#184C55' }}>
-                            Requires Approval
-                          </span>
-                        }
-                        checked={formData.requiresApproval}
+                      <Form.Label className="fw-medium" style={{ color: '#184C55' }}>Exclusion Year</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="exclusionYear"
+                        value={formData.exclusionYear ?? ''}
                         onChange={handleInputChange}
-                        className="custom-switch"
+                        min="1900"
+                        placeholder="YYYY"
+                        className="form-control-lg border-2"
+                        style={{ borderColor: '#184C55' }}
                       />
                       <Form.Text className="text-muted">
-                        Whether this leave type requires manager approval
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Check
-                        type="switch"
-                        id="active"
-                        name="active"
-                        label={
-                          <span className="fw-medium" style={{ color: '#184C55' }}>
-                            Active
-                          </span>
-                        }
-                        checked={formData.active}
-                        onChange={handleInputChange}
-                        className="custom-switch"
-                      />
-                      <Form.Text className="text-muted">
-                        Whether this leave policy is currently active
+                        Year the policy won't apply (optional)
                       </Form.Text>
                     </Form.Group>
                   </Col>

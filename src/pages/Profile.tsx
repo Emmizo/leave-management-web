@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaPencilAlt } from 'react-icons/fa';
 import { RootState, AppDispatch } from '../context/store';
 import { fetchLeaveBalances } from '../context/leaveSlice';
-import { updateProfile } from '../context/authSlice';
+import { updateProfile, updateProfilePicture } from '../context/authSlice';
 import { toast } from 'react-toastify';
+import ImageCropperModal from '../components/profile/ImageCropperModal';
 
 const Profile = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -14,26 +15,31 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    username: '',
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     department: '',
     position: '',
-    profilePicture: '',
   });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+
+  // State for cropper modal
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [showCropperModal, setShowCropperModal] = useState(false);
 
   useEffect(() => {
     if (user) {
       setFormData({
+        username: user.user?.username || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '(Not Provided)',
         department: user.department || '',
         position: user.position || '',
-        profilePicture: user.profilePicture || '',
       });
       setPreviewImage(user.profilePicture || null);
     }
@@ -51,19 +57,45 @@ const Profile = () => {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Modified to open the cropper modal
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Create a preview URL for the image
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-        setFormData(prev => ({
-          ...prev,
-          profilePicture: reader.result as string
-        }));
+        setImageToCrop(reader.result as string);
+        setShowCropperModal(true);
       };
       reader.readAsDataURL(file);
+      // Reset the file input value to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; 
+      }
+    }
+  };
+
+  // Function to handle the cropped image blob
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    setIsUploadingPicture(true);
+    try {
+      const formData = new FormData();
+      // Append the blob directly, giving it a filename
+      formData.append('profilePicture', croppedImageBlob, 'profile_picture.jpg'); 
+
+      await dispatch(updateProfilePicture(formData)).unwrap();
+      toast.success('Profile picture updated successfully!');
+
+      // Update preview with a temporary URL from the blob
+      setPreviewImage(URL.createObjectURL(croppedImageBlob));
+      
+      // Close the modal (handled within the modal itself now)
+      // setShowCropperModal(false);
+      // setImageToCrop(null);
+
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile picture');
+    } finally {
+      setIsUploadingPicture(false);
     }
   };
 
@@ -81,13 +113,13 @@ const Profile = () => {
   const handleEdit = () => {
     if (user) {
       setFormData({
+        username: user.user?.username || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '(Not Provided)',
         department: user.department || '',
         position: user.position || '',
-        profilePicture: user.profilePicture || '',
       });
       setPreviewImage(user.profilePicture || null);
     }
@@ -98,7 +130,7 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
-  if (status === 'loading' || !user) {
+  if (status === 'loading' && !user) { // Added check for !user to avoid flicker
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
         <div className="spinner-border" style={{ color: '#184C55' }} role="status">
@@ -110,7 +142,6 @@ const Profile = () => {
 
   return (
     <div className="container py-4">
-
       <div className="row">
         <div className="col-md-4">
           <div className="card mb-4 shadow-sm">
@@ -124,33 +155,61 @@ const Profile = () => {
                       className="rounded-circle mx-auto" 
                       style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #184C55' }}
                     />
-                    {isEditing && (
-                      <button 
-                        className="btn btn-sm position-absolute" 
-                        style={{ 
-                          bottom: '0', 
-                          right: '50%', 
-                          transform: 'translateX(50%)',
-                          backgroundColor: '#184C55',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '32px',
-                          height: '32px',
-                          padding: '0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                        onClick={triggerFileInput}
-                      >
-                        <FaCamera size={14} />
-                      </button>
-                    )}
+                    <div
+                      className="position-absolute d-flex align-items-center justify-content-center"
+                      style={{ 
+                        bottom: '5px',  
+                        right: '5px',   
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: '#184C55',
+                        borderRadius: '50%',
+                        color: 'white',
+                        cursor: 'pointer',
+                        zIndex: 10, 
+                        border: '2px solid white'
+                      }}
+                      onClick={triggerFileInput}
+                    >
+                      {isUploadingPicture ? (
+                        <div className="spinner-border spinner-border-sm text-light" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      ) : (
+                        <FaPencilAlt size={16} />
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto" 
-                       style={{ width: '120px', height: '120px', backgroundColor: '#184C55', color: '#FFFFFF', border: '3px solid #184C55' }}>
+                  <div 
+                    className="rounded-circle d-flex align-items-center justify-content-center mx-auto position-relative"
+                    style={{ width: '120px', height: '120px', backgroundColor: '#184C55', color: '#FFFFFF', border: '3px solid #184C55' }}
+                  >
                     <FaUser size={50} />
+                    <div 
+                      className="position-absolute d-flex align-items-center justify-content-center" 
+                      style={{ 
+                        bottom: '5px',  
+                        right: '5px',   
+                        width: '32px', 
+                        height: '32px', 
+                        backgroundColor: '#184C55', 
+                        borderRadius: '50%', 
+                        color: 'white',  
+                        cursor: 'pointer',
+                        zIndex: 10, 
+                        border: '2px solid white' 
+                      }}
+                      onClick={triggerFileInput}
+                    >
+                      {isUploadingPicture ? ( // Show spinner here too if needed during upload
+                        <div className="spinner-border spinner-border-sm text-light" role="status"> 
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                       ) : (
+                        <FaPencilAlt size={16} />
+                       )}
+                    </div>
                   </div>
                 )}
                 <input 
@@ -163,6 +222,21 @@ const Profile = () => {
               </div>
               {isEditing ? (
                 <form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <label htmlFor="username" className="form-label fw-medium" style={{ color: '#184C55' }}>Username</label>
+                    <div className="input-group">
+                      <span className="input-group-text" style={{ backgroundColor: '#f8f9fa', borderColor: '#184C55' }}>
+                        <FaUser style={{ color: '#184C55' }} />
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
                   <div className="mb-3">
                     <label htmlFor="firstName" className="form-label fw-medium" style={{ color: '#184C55' }}>First Name</label>
                     <div className="input-group">
@@ -285,6 +359,16 @@ const Profile = () => {
                 <li className="mb-3 d-flex align-items-center">
                   <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
                        style={{ width: '36px', height: '36px', backgroundColor: '#f8f9fa', color: '#184C55' }}>
+                    <FaUser />
+                  </div>
+                  <div>
+                    <small className="text-muted d-block">Username</small>
+                    <span>{formData.username}</span>
+                  </div>
+                </li>
+                <li className="mb-3 d-flex align-items-center">
+                  <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                       style={{ width: '36px', height: '36px', backgroundColor: '#f8f9fa', color: '#184C55' }}>
                     <FaEnvelope />
                   </div>
                   <div>
@@ -381,6 +465,17 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Render the Cropper Modal */}
+      <ImageCropperModal
+        isOpen={showCropperModal}
+        onClose={() => {
+          setShowCropperModal(false);
+          setImageToCrop(null); // Clear the image source when closing
+        }}
+        imageSrc={imageToCrop}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 };

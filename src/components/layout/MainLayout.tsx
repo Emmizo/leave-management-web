@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaUserCircle, FaTimes, FaKey } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaKey, FaUsers } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../context/authSlice';
 import { AppDispatch, RootState } from '../../context/store';
@@ -50,7 +50,10 @@ const MainLayout = () => {
   ];
 
   // Admin/HR only menu items
-  const adminMenuItems: MenuItem[] = [];
+  const adminMenuItems: MenuItem[] = [
+    { path: '/manage-employees', icon: <FaUsers />, label: 'Manage Employees' },
+    // Add other Admin/HR specific items here if needed
+  ];
 
   // Combine menu items based on user role
   const menuItems = isAdminOrHR 
@@ -183,8 +186,7 @@ const MainLayout = () => {
               <Dropdown.Toggle 
                 variant="link" 
                 id="dropdown-profile" 
-                className="p-0 border-0 shadow-none"
-                style={{ color: '#184C55' }}
+                className="p-0 border-0 shadow-none d-flex align-items-center no-caret"
               >
                 {user?.profilePicture ? (
                   <img 
@@ -196,10 +198,21 @@ const MainLayout = () => {
                       height: isMobile ? '35px' : '45px', 
                       objectFit: 'cover', 
                       border: '2px solid #184C55',
+                      cursor: 'pointer'
                     }}
                   />
                 ) : (
-                  <FaUserCircle size={isMobile ? 35 : 45} />
+                  <div 
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ 
+                      width: isMobile ? '35px' : '45px', 
+                      height: isMobile ? '35px' : '45px',
+                      backgroundColor: '#184C55',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <FaUser size={isMobile ? 20 : 25} color="#ffffff" />
+                  </div>
                 )}
               </Dropdown.Toggle>
 

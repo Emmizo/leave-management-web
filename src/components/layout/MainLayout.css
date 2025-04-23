@@ -94,4 +94,8 @@
     width: 35px !important;
     height: 35px !important;
   }
+}
+
+.no-caret::after {
+  display: none !important;
 } 
