@@ -105,6 +105,10 @@ const Profile = () => {
       await dispatch(updateProfile(formData)).unwrap();
       toast.success('Profile updated successfully!');
       setIsEditing(false);
+      // Force a complete page refresh
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     }
