@@ -1,12 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaKey, FaUsers, FaBell } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaKey, FaUsers } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../context/authSlice';
 import { AppDispatch, RootState } from '../../context/store';
 import ChangePasswordModal from '../dashboard/ChangePasswordModal';
 import { Dropdown } from 'react-bootstrap';
 import './MainLayout.css';
+
+// First, create a function to fetch the image with proper headers
+const fetchProfileImage = async (url: string) => {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching profile image:', error);
+    return null;
+  }
+};
 
 interface MenuItem {
   path: string;
@@ -18,10 +37,22 @@ const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string>('');
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
+
+  // Use useEffect to fetch the image when the component mounts or when the profile picture URL changes
+  useEffect(() => {
+    const loadImage = async () => {
+      if (user?.user?.profilePicture) {
+        const imageUrl = await fetchProfileImage(user.user.profilePicture.replace(/\s+/g, ''));
+        setProfileImageUrl(imageUrl || '');
+      }
+    };
+    loadImage();
+  }, [user?.user?.profilePicture]);
 
   // Handle window resize
   useEffect(() => {
@@ -37,7 +68,7 @@ const MainLayout = () => {
 
   // Check if user is admin or HR
   const isAdminOrHR = user?.user?.role === 'ADMIN' || user?.user?.role === 'HR_MANAGER';
-
+console.log("user?.profilePicture"+user?.user);
   // Base menu items that all users can see
   const baseMenuItems: MenuItem[] = [
     { path: '/dashboard', icon: <FaHome />, label: 'Dashboard' },
@@ -75,11 +106,11 @@ const MainLayout = () => {
     }
   };
 
-  // Handle notification click
+  /* // Handle notification click
   const handleNotificationClick = () => {
     // Here you can add logic to mark notifications as read
   };
-
+ */
   return (
     <div className="d-flex flex-column flex-md-row min-vh-100">
       {/* Overlay for mobile */}
@@ -181,12 +212,13 @@ const MainLayout = () => {
           </div>
           <div className="d-flex align-items-center">
             <div className="text-end me-2 me-md-3 d-none d-sm-block">
+              
               <span className="fw-bold d-block">
                 {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}
               </span>
               <small className="text-muted">{user?.position || 'Position'}</small>
             </div>
-            <div className="position-relative me-3">
+            {/* <div className="position-relative me-3">
               <button
                 className="btn btn-link text-dark p-0 position-relative"
                 onClick={handleNotificationClick}
@@ -194,17 +226,17 @@ const MainLayout = () => {
               >
                 <FaBell />
               </button>
-            </div>
+            </div> */}
             <Dropdown align="end">
               <Dropdown.Toggle 
                 variant="link" 
                 id="dropdown-profile" 
                 className="p-0 border-0 shadow-none d-flex align-items-center no-caret position-relative"
               >
-                {user?.profilePicture ? (
+                {profileImageUrl ? (
                   <div className="position-relative">
                     <img 
-                      src={user.profilePicture} 
+                      src={profileImageUrl} 
                       alt="Profile" 
                       className="rounded-circle" 
                       style={{ 

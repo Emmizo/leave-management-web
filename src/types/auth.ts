@@ -5,6 +5,7 @@ export interface UserRole {
   role: 'STAFF' | 'HR_MANAGER' | 'ADMIN'; // Adjust roles as needed
   provider: string | null;
   providerId: string | null;
+  profilePicture?: string | null;
 }
 
 export interface Leave {
