@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FaMicrosoft } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,12 +24,14 @@ const Login = () => {
   const location = useLocation();
   
   // Redux state
-  const { status, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { status, isAuthenticated } = useSelector((state: RootState) => state.auth);
   
   // Local state
   const [formData, setFormData] = useState<LoginFormData>(initialFormData);
   const { username, password } = formData;
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setError] = useState('');
 
   // Handle Microsoft OAuth callback
   useEffect(() => {
@@ -70,15 +72,26 @@ const Login = () => {
     }));
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
-    
+    setError('');
+    setLoading(true);
+
     try {
-      await dispatch(loginUser({ username, password })).unwrap();
-    } catch (err) {
-      // Error is handled by Redux state
-      console.error('Login failed:', err);
+      // Determine if the input is an email or username
+      const isEmail = username.includes('@');
+      const loginType = isEmail ? 'email' : 'username';
+
+      await dispatch(loginUser({ 
+        username, 
+        password, 
+        loginType 
+      })).unwrap();
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +104,7 @@ const Login = () => {
     }
   };
 
-  const isLoading = status === 'loading';
+  const isLoading = status === 'loading' || loading;
 
   return (
     <div className="min-h-screen d-flex flex-column align-items-center justify-content-center bg-white">
@@ -107,15 +120,15 @@ const Login = () => {
           </div>
 
           {/* Error Alert */}
-          {error && (
+          {errorMessage && (
             <div className="alert alert-danger py-2 d-flex align-items-center" role="alert">
               <i className="fas fa-exclamation-circle me-2"></i>
-              <div>{error}</div>
+              <div>{errorMessage}</div>
             </div>
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="mt-4">
+          <form onSubmit={handleLogin} className="mt-4">
             {/* Username Field */}
             <div className="mb-3">
               <label htmlFor="username" className="form-label text-dark">

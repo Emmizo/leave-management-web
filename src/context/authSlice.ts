@@ -25,6 +25,7 @@ const initialState: AuthState = {
 interface LoginCredentials {
   username: string;
   password: string;
+  loginType: 'username' | 'email';
 }
 
 // Async Thunk for Login
@@ -32,7 +33,14 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      const response = await api.post<LoginResponse>('/auth/login', credentials);
+      // Determine if the input is an email or username
+      const isEmail = credentials.username.includes('@');
+      const loginType = isEmail ? 'email' : 'username';
+      
+      const response = await api.post<LoginResponse>('/auth/login', {
+        ...credentials,
+        loginType
+      });
       localStorage.setItem('authToken', response.data.token);
       return response.data;
     } catch (error: unknown) {
