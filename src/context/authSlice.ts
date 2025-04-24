@@ -2,8 +2,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../services/api';
 import { Employee, LoginResponse, ProfileResponse } from '../types/auth';
-import axios, { AxiosError } from 'axios';
-import { initiateLoginWithMicrosoft } from '../services/authService';
+import axios from 'axios';
 
 // Export the interface
 export interface AuthState {
@@ -52,11 +51,31 @@ export const loginWithMicrosoft = createAsyncThunk(
   'auth/loginWithMicrosoft',
   async (_, { rejectWithValue }) => {
     try {
-      initiateLoginWithMicrosoft();
-      return null; // This action won't complete normally due to the redirect
+      // Backend returns the URL as plain text, let's adjust the expected type
+      const response = await api.post<string>('/auth/microsoft/login'); // Expect string
+      console.log('Microsoft login response:', response.data);
+
+      // Directly check if response.data (the URL string) exists
+      if (!response.data) {
+        throw new Error('No authorization URL received from server');
+      }
+
+      // Redirect using the URL string directly from response.data
+      window.location.href = response.data;
+
+      // This part is technically unreachable due to redirect, but good practice
+      return null;
     } catch (error: unknown) {
       console.error('Microsoft login initiation failed:', error);
-      return rejectWithValue('Failed to initiate Microsoft login');
+      let errorMessage = 'Failed to initiate Microsoft login';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || errorMessage;
+      }
+      // If the error is the specific one we throw, use a clearer message
+      if (error instanceof Error && error.message === 'No authorization URL received from server') {
+        errorMessage = error.message; 
+      }
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -67,14 +86,13 @@ export const handleMicrosoftCallback = createAsyncThunk(
   async (code: string, { rejectWithValue }) => {
     try {
       // Send the code to your backend to exchange for tokens
-      const response = await api.post('/auth/microsoft', { code });
+      const response = await api.post('/auth/microsoft/callback', { code });
       console.log('Microsoft callback response:', response.data);
       localStorage.setItem('authToken', response.data.token);
-
-      console.log('Microsoft callback response:', response.data);
       return response.data;
-    } catch (error: unknown) {
-      if (error instanceof AxiosError && error.response?.data) {
+    } catch (error) {
+      console.error('Microsoft callback error:', error);
+      if (axios.isAxiosError(error) && error.response?.data) {
         return rejectWithValue(error.response.data.message);
       }
       return rejectWithValue('Failed to authenticate with Microsoft');

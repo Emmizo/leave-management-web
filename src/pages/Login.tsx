@@ -130,7 +130,7 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 disabled={isLoading}
-                placeholder="Enter your username"
+                placeholder="Enter email or username"
                 style={{ borderRadius: '8px' }}
               />
             </div>

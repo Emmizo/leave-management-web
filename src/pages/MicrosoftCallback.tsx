@@ -1,88 +1,97 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../context/store';
 import { loginSuccess } from '../context/authSlice';
 import { toast } from 'react-toastify';
 import api from '../services/api';
+import { AxiosError } from 'axios';
 
 const MicrosoftCallback = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Debug logs
-    console.log('Full URL:', window.location.href);
-    console.log('Location Hash:', location.hash);
-
-    // Get tokens from URL fragment
-    const hashParams = new URLSearchParams(location.hash.substring(1));
-    const idToken = hashParams.get('id_token');
-    const error = hashParams.get('error');
-    const errorDescription = hashParams.get('error_description');
-
-    if (idToken) {
+    const handleMicrosoftCallback = async () => {
       try {
-        // Decode the JWT (id_token)
-        const tokenParts = idToken.split('.');
-        const payload = JSON.parse(atob(tokenParts[1]));
-        
-        console.log('Microsoft user info:', payload); // Debug log
-        
-        // Extract relevant user information
-        const microsoftUser = {
-          email: payload.email,
-          firstName: payload.given_name,
-          lastName: payload.family_name,
-          microsoftId: payload.oid, // Microsoft's unique user ID
-          username: payload.preferred_username
-        };
+        // 1. Get the authorization code from URL parameters
+        const urlParams = new URLSearchParams(location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
 
-        // Send Microsoft user info to backend to get our JWT
-        api.post('/auth/microsoft/login', microsoftUser)
-          .then(response => {
-            console.log('Backend response:', response.data); // Debug log
-            const { token } = response.data;
-            
-            // Store your application's JWT
-            localStorage.setItem('authToken', token);
-            
-            // Update Redux state
-            dispatch(loginSuccess({ token }));
-            
-            toast.success('Successfully logged in with Microsoft');
-            navigate('/dashboard');
-          })
-          .catch(error => {
-            console.error('Backend login failed:', error);
-            toast.error('Failed to complete login process');
-            navigate('/login');
-          });
-      } catch (error) {
-        console.error('Failed to process Microsoft login:', error);
-        toast.error('Failed to process login information');
-        navigate('/login');
+        console.log('Microsoft callback params:', { code, error, errorDescription });
+
+        // 2. Check if a 'code' exists
+        if (code) {
+          console.log('Sending code to backend:', code);
+
+          // 3. Send the authorization code to backend
+          const response = await api.post('/auth/microsoft/callback', { code });
+          console.log('Backend callback response:', response.data);
+          
+          const { token } = response.data;
+          
+          // Store JWT token
+          localStorage.setItem('authToken', token);
+          
+          // Update Redux state with token
+          dispatch(loginSuccess({ token }));
+          
+          toast.success('Successfully logged in with Microsoft');
+          navigate('/dashboard');
+        } else if (error) {
+          const errorMsg = errorDescription || 'Microsoft login failed';
+          console.error('Microsoft OAuth error:', error, errorDescription);
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
+          setTimeout(() => navigate('/login'), 3000);
+        } else {
+          const errorMsg = 'Login failed: No authentication data received';
+          console.error(errorMsg);
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
+          setTimeout(() => navigate('/login'), 3000);
+        }
+      } catch (err) {
+        const error = err as AxiosError<{ message: string }>;
+        const errorMsg = error.response?.data?.message || 'Failed to complete login process';
+        console.error('Backend login failed during callback:', error.response?.data || error);
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
+        setTimeout(() => navigate('/login'), 3000);
+      } finally {
+        setIsProcessing(false);
       }
-    } else if (error) {
-      console.error('Microsoft OAuth error:', error, errorDescription);
-      toast.error(errorDescription || 'Microsoft login failed');
-      navigate('/login');
-    } else {
-      console.error('No ID token found in callback URL');
-      toast.error('Login failed: No authentication data received');
-      navigate('/login');
-    }
+    };
+
+    handleMicrosoftCallback();
   }, [dispatch, location, navigate]);
 
   return (
     <div className="min-h-screen d-flex align-items-center justify-content-center">
       <div className="text-center">
-        <div className="spinner-border text-primary mb-3" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <h4>Completing Microsoft Sign In...</h4>
-        <p className="text-muted">Please wait while we process your login.</p>
+        {isProcessing ? (
+          <>
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <h4>Completing Microsoft Sign In...</h4>
+            <p className="text-muted">Please wait while we process your login.</p>
+          </>
+        ) : errorMessage ? (
+          <>
+            <div className="text-danger mb-3">
+              <i className="fas fa-exclamation-circle fa-3x"></i>
+            </div>
+            <h4 className="text-danger">Login Failed</h4>
+            <p className="text-muted">{errorMessage}</p>
+            <p className="text-muted">Redirecting to login page...</p>
+          </>
+        ) : null}
       </div>
     </div>
   );

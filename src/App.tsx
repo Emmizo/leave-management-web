@@ -33,7 +33,7 @@ import { RootState, AppDispatch } from './context/store';
 import { fetchUserProfile, AuthState } from './context/authSlice';
 
 // Notification Service
-import { initializeNotifications, setNotificationCallback } from './services/notificationService';
+import { initializeNotifications } from './services/notificationService';
 
 // Helper component for protected routes - Now only checks authentication
 interface ProtectedRouteProps {
@@ -93,15 +93,6 @@ function App() {
   // Initialize notifications
   useEffect(() => {
     initializeNotifications();
-    
-    // Set up notification callback
-    setNotificationCallback((count: number) => {
-      // Update notification count in MainLayout
-      const mainLayout = document.querySelector('.notification-count');
-      if (mainLayout) {
-        mainLayout.setAttribute('data-count', count.toString());
-      }
-    });
   }, []);
 
   // Fetch user profile only when authenticated but user data is missing

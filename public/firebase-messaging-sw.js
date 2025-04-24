@@ -1,8 +1,6 @@
 importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-messaging-compat.js');
 
-console.log('Service worker starting...');
-
 // Initialize Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyD8iiuQsKlT8hpBM5dNYTCA7t1cXyxjADI",
@@ -14,53 +12,29 @@ firebase.initializeApp({
   measurementId: "G-EJT3ETH7FM"
 });
 
-console.log('Firebase initialized in service worker');
-
 const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log('Received background message in service worker:', payload);
-
+  console.log('Received background message:', payload);
+  
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
     icon: '/ist-logo.png',
     badge: '/ist-logo.png',
     vibrate: [200, 100, 200],
-    tag: 'notification-' + Date.now(),
-    requireInteraction: true,
-    data: {
-      click_action: payload.notification.click_action || '/'
-    }
+    tag: 'notification-' + Date.now()
   };
 
-  console.log('Showing notification with options:', notificationOptions);
-  
-  return self.registration.showNotification(notificationTitle, notificationOptions)
-    .then(() => console.log('Notification shown successfully'))
-    .catch(error => console.error('Error showing notification:', error));
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
   event.notification.close();
-  
-  // This looks to see if the current is already open and focuses if it is
   event.waitUntil(
-    clients.matchAll({
-      type: "window"
-    }).then(function(clientList) {
-      for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(event.notification.data?.click_action || '/');
-      }
-    })
+    clients.openWindow('/')
   );
 });
 

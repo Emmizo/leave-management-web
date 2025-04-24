@@ -2,7 +2,7 @@
 import  { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Container, Table, Badge, Button, Modal } from 'react-bootstrap';
-import { FaEye, FaTrash, FaFileExport, FaInbox } from 'react-icons/fa';
+import { FaEye, FaTrash, FaFileExport, FaInbox, FaFileAlt } from 'react-icons/fa';
 import { fetchAllLeaveHistory, deleteLeave } from '../context/leaveSlice';
 import { RootState, AppDispatch } from '../context/store';
 import { Leave } from '../types/auth';
@@ -81,6 +81,10 @@ const LeaveHistory = () => {
     exportToCSV(exportData, 'leave_history');
   };
 
+  const handleViewDocument = (documentUrl: string) => {
+    window.open(documentUrl, '_blank');
+  };
+
   if (loading === 'loading') return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -149,6 +153,18 @@ const LeaveHistory = () => {
                     >
                       <FaEye size={14} />
                     </Button>
+                    {leave.documentUrl && (
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        className="p-1 d-inline-flex align-items-center justify-content-center"
+                        style={{ width: '30px', height: '30px' }}
+                        onClick={() => handleViewDocument(leave.documentUrl!)}
+                        title="View document"
+                      >
+                        <FaFileAlt size={14} />
+                      </Button>
+                    )}
                     <Button
                       variant="outline-danger"
                       size="sm"
@@ -235,6 +251,20 @@ const LeaveHistory = () => {
                 <h6 className="text-muted">Detail</h6>
                 <p className="border rounded p-3 bg-light">{selectedLeave.reason}</p>
               </div>
+
+              {selectedLeave.documentUrl && (
+                <div className="mb-3">
+                  <h6 className="text-muted">Supporting Document</h6>
+                  <Button
+                    variant="outline-secondary"
+                    className="d-flex align-items-center gap-2"
+                    onClick={() => handleViewDocument(selectedLeave.documentUrl!)}
+                  >
+                    <FaFileAlt />
+                    View Document
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Modal.Body>

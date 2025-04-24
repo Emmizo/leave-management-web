@@ -7,7 +7,6 @@ import { AppDispatch, RootState } from '../../context/store';
 import ChangePasswordModal from '../dashboard/ChangePasswordModal';
 import { Dropdown } from 'react-bootstrap';
 import './MainLayout.css';
-import { setNotificationCallback } from '../../services/notificationService';
 
 interface MenuItem {
   path: string;
@@ -23,7 +22,6 @@ const MainLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
-  const [notificationCount, setNotificationCount] = useState(0);
 
   // Handle window resize
   useEffect(() => {
@@ -35,13 +33,6 @@ const MainLayout = () => {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    // Set up notification callback
-    setNotificationCallback((count: number) => {
-      setNotificationCount(count);
-    });
   }, []);
 
   // Check if user is admin or HR
@@ -202,18 +193,6 @@ const MainLayout = () => {
                 style={{ fontSize: '1.25rem' }}
               >
                 <FaBell />
-                {notificationCount > 0 && (
-                  <span
-                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                    style={{ 
-                      fontSize: '0.6rem',
-                      border: '2px solid white',
-                      padding: '4px 6px'
-                    }}
-                  >
-                    {notificationCount}
-                  </span>
-                )}
               </button>
             </div>
             <Dropdown align="end">

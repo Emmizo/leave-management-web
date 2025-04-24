@@ -11,6 +11,7 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
   const { status, error, message } = useSelector((state: RootState) => state.passwordReset);
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -29,11 +30,26 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError(null);
+
     if (!email) {
-      toast.error('Please enter your email address');
+      setEmailError('Please enter your email address');
       return;
     }
+
+    if (!email.toLowerCase().endsWith('@ist.com')) {
+      setEmailError('Please enter a valid IST email address @ist.com');
+      return;
+    }
+
     await dispatch(requestPasswordReset(email));
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (emailError) {
+      setEmailError(null);
+    }
   };
 
   return (
@@ -52,25 +68,31 @@ const ForgotPassword = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="mb-4">
               <label htmlFor="email" className="form-label fw-medium" style={{ color: '#184C55' }}>
                 Email address
               </label>
-              <div className="input-group">
-                <span className="input-group-text" style={{ backgroundColor: '#f8f9fa', borderColor: '#184C55' }}>
+              <div className="input-group has-validation">
+                <span className="input-group-text" style={{ backgroundColor: '#f8f9fa', borderColor: emailError ? 'var(--bs-danger)' : '#184C55' }}>
                   <FaEnvelope style={{ color: '#184C55' }} />
                 </span>
                 <input
                   type="email"
-                  className="form-control form-control-lg"
+                  className={`form-control form-control-lg ${emailError ? 'is-invalid' : ''}`}
                   id="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   placeholder="Enter your email"
                   required
-                  style={{ borderColor: '#184C55', borderRadius: '0 8px 8px 0' }}
+                  aria-describedby="emailHelp emailFeedback"
+                  style={{ borderColor: emailError ? 'var(--bs-danger)' : '#184C55', borderRadius: '0 8px 8px 0' }}
                 />
+                {emailError && (
+                  <div id="emailFeedback" className="invalid-feedback w-100">
+                    {emailError}
+                  </div>
+                )}
               </div>
             </div>
 

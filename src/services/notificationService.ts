@@ -1,9 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { toast } from 'react-toastify';
 
-// Your Firebase configuration
+// Basic Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyD8iiuQsKlT8hpBM5dNYTCA7t1cXyxjADI",
   authDomain: "leave-management-6da00.firebaseapp.com",
@@ -14,97 +13,68 @@ const firebaseConfig = {
   measurementId: "G-EJT3ETH7FM"
 };
 
+// VAPID key for web push notifications
+// To get your VAPID key:
+// 1. Go to Firebase Console -> Project Settings -> Cloud Messaging
+// 2. Scroll to "Web Push certificates" section
+// 3. Click "Generate Key Pair" if you haven't already
+// 4. Copy the generated key pair
+const VAPID_KEY = ""; // Replace with your VAPID key from Firebase Console
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
-const functions = getFunctions(app);
-const sendNotificationFunction = httpsCallable(functions, 'sendNotification');
-
-// Notification state management
-let notificationCallback: ((count: number) => void) | null = null;
-
-export const setNotificationCallback = (callback: (count: number) => void) => {
-  notificationCallback = callback;
-};
 
 // Request permission for notifications
 export const requestNotificationPermission = async () => {
   try {
-    console.log('Starting notification permission request...');
-    
-    // Check if service worker is supported
-    if (!('serviceWorker' in navigator)) {
-      console.error('Service Worker is not supported in this browser');
-      throw new Error('Service Worker is not supported in this browser');
-    }
-
     // Check if notifications are supported
     if (!('Notification' in window)) {
-      console.error('Notifications are not supported in this browser');
       throw new Error('Notifications are not supported in this browser');
     }
 
-    // Check if push messaging is supported
-    if (!('PushManager' in window)) {
-      console.error('Push messaging is not supported in this browser');
-      throw new Error('Push messaging is not supported in this browser');
+    // Check if service worker is supported
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service workers are not supported in this browser');
     }
 
-    console.log('Checking notification permission status:', Notification.permission);
-    
-    // Register the service worker
-    console.log('Registering service worker...');
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    });
+    // Check if VAPID key is properly set
+    if (!VAPID_KEY) {
+      throw new Error('VAPID key is not configured. Please follow the instructions in notificationService.ts to get your VAPID key from Firebase Console.');
+    }
 
-    console.log('Service worker registered:', registration);
-
-    // Wait for the service worker to be ready
-    console.log('Waiting for service worker to be ready...');
-    await navigator.serviceWorker.ready;
-    console.log('Service worker is ready');
-
-    // Request notification permission
-    console.log('Requesting notification permission...');
+    // Request permission
     const permission = await Notification.requestPermission();
-    console.log('Notification permission status:', permission);
+    console.log('Notification permission:', permission);
     
     if (permission === 'granted') {
-      console.log('Notification permission granted, getting FCM token...');
-      const token = await getToken(messaging, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-        serviceWorkerRegistration: registration
-      });
-      console.log('FCM token obtained:', token);
-      return token;
-    } else {
-      console.log('Notification permission denied');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error getting notification permission:', error);
-    if (error instanceof Error) {
-      if (error.message.includes('MIME type')) {
-        console.error('Service worker file is not being served with the correct MIME type. Please ensure your server is configured to serve .js files with the correct MIME type.');
+      try {
+        // Get FCM token with VAPID key
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_KEY
+        });
+        console.log('FCM Token:', token);
+        return token;
+      } catch (tokenError) {
+        console.error('Error getting FCM token:', tokenError);
+        throw new Error('Failed to get FCM token. Please check your VAPID key configuration.');
       }
     }
+    return null;
+  } catch (error) {
+    console.error('Error getting notification permission:', error);
     throw error;
   }
 };
 
-// Handle incoming messages when the app is in the foreground
+// Handle incoming messages
 export const onMessageListener = () => {
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
-      console.log('Received foreground message:', payload);
+      console.log('Received message:', payload);
       const { title, body } = payload.notification || {};
       
-      // Update notification count
-      if (notificationCallback) {
-        notificationCallback(1);
-      }
-      
+      // Show toast notification
       toast.info(`${title}\n${body}`, {
         position: 'top-right',
         autoClose: 5000,
@@ -113,30 +83,24 @@ export const onMessageListener = () => {
         pauseOnHover: true,
         draggable: true,
       });
+      
       resolve(payload);
     });
   });
 };
 
-// Send a notification using Firebase Cloud Function
-export const sendNotification = async (
-  token: string,
-  title: string,
-  body: string
-) => {
+// Send notification (for testing)
+export const sendNotification = async (token: string, title: string, body: string) => {
   try {
-    console.log('Sending notification to token:', token);
+    console.log('Sending test notification to token:', token);
+    console.log('Title:', title);
+    console.log('Body:', body);
     
-    const result = await sendNotificationFunction({ 
-      token, 
-      title, 
-      body,
-      icon: '/ist-logo.png',
-      link: window.location.origin
-    });
-    
-    console.log('Notification sent successfully:', result.data);
-    return result.data;
+    // For testing, just log the notification details
+    return {
+      success: true,
+      message: 'Test notification sent (logged to console)'
+    };
   } catch (error) {
     console.error('Error sending notification:', error);
     throw error;
