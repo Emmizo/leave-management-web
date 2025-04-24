@@ -14,6 +14,7 @@ import { MainLayout, AuthLayout } from './components/layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import LeaveApplication from './pages/LeaveApplication';
+import LeaveApproval from './pages/LeaveApproval';
 import LeaveHistory from './pages/LeaveHistory';
 import TeamCalendar from './pages/TeamCalendar';
 import Profile from './pages/Profile';
@@ -24,10 +25,15 @@ import LeavePolicies from './pages/LeavePolicies';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ManageEmployees from './pages/ManageEmployees'; // Import the new page
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
 // Redux
 import { RootState, AppDispatch } from './context/store';
 import { fetchUserProfile, AuthState } from './context/authSlice';
+
+// Notification Service
+import { initializeNotifications, setNotificationCallback } from './services/notificationService';
 
 // Helper component for protected routes - Now only checks authentication
 interface ProtectedRouteProps {
@@ -84,17 +90,25 @@ function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, status, user } = useSelector((state: RootState): AuthState => state.auth);
 
+  // Initialize notifications
+  useEffect(() => {
+    initializeNotifications();
+    
+    // Set up notification callback
+    setNotificationCallback((count: number) => {
+      // Update notification count in MainLayout
+      const mainLayout = document.querySelector('.notification-count');
+      if (mainLayout) {
+        mainLayout.setAttribute('data-count', count.toString());
+      }
+    });
+  }, []);
+
   // Fetch user profile only when authenticated but user data is missing
   useEffect(() => {
-    // If we are marked as authenticated in the state, but don't have user data yet,
-    // and we are not already in a loading state from a previous fetch attempt.
     if (isAuthenticated && !user && status !== 'loading') {
       dispatch(fetchUserProfile());
     }
-    // NOTE: We don't need to check localStorage directly here anymore.
-    // The loginUser action sets the token AND isAuthenticated=true.
-    // If the user reloads, the initial state loads the token, 
-    // then this effect runs when isAuthenticated becomes true after profile fetch.
   }, [dispatch, isAuthenticated, user, status]);
 
   // Show loading indicator only during the initial auth check triggered by stored token
@@ -144,6 +158,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="leave-application" element={<LeaveApplication />} />
+          <Route path="leave-approval" element={<LeaveApproval />} />
           <Route path="leave-history" element={<LeaveHistory />} />
           <Route path="team-calendar" element={<TeamCalendar />} />
           <Route path="profile" element={<Profile />} />
@@ -166,11 +181,12 @@ function App() {
               </AdminHrProtectedRoute>
             } 
           />
+          <Route path="settings" element={<Settings />} />
           {/* Add other nested routes here */}
         </Route>
 
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

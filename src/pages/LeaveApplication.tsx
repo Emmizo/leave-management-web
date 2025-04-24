@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { selectAllLeavePolicies } from '../context/leavePolicySlice';
+import { requestNotificationPermission, sendNotification } from '../services/notificationService';
 
 interface LeaveFormData {
   leaveType: string;
@@ -33,6 +34,7 @@ const LeaveApplication = () => {
   const { status, error } = useSelector((state: RootState) => state.leaves);
   const { user } = useSelector((state: RootState) => state.auth);
   const policies = useSelector(selectAllLeavePolicies);
+  const [notificationToken, setNotificationToken] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<LeaveFormData>(initialFormData);
   const [file, setFile] = useState<File | null>(null);
@@ -189,6 +191,15 @@ const LeaveApplication = () => {
     }
   }, [formData.startDate, formData.endDate, formData.leaveDuration]);
 
+  useEffect(() => {
+    // Request notification permission when component mounts
+    const requestPermission = async () => {
+      const token = await requestNotificationPermission();
+      setNotificationToken(token);
+    };
+    requestPermission();
+  }, []);
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -237,19 +248,16 @@ const LeaveApplication = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Prevent multiple submissions
     if (isSubmitting) {
       return;
     }
 
-    // Clear any previous validation errors
     setValidationErrors({});
 
     try {
       setIsSubmitting(true);
       const formDataToSend = new FormData();
       
-      // Create the leaveRequest object
       const leaveRequest = {
         startDate: formData.startDate,
         endDate: formData.endDate,
@@ -260,36 +268,44 @@ const LeaveApplication = () => {
         numberOfDays: formData.numberOfDays
       };
 
-      // Append leaveRequest as a blob with application/json type
       formDataToSend.append('leaveRequest', new Blob([JSON.stringify(leaveRequest)], {
         type: 'application/json'
       }));
 
-      // Append document if exists
-      if (file) {
+      // Only append document if it exists and leave type is not PTO
+      if (file && formData.leaveType !== 'PTO') {
         formDataToSend.append('document', file);
       }
 
       await dispatch(createLeave(formDataToSend)).unwrap();
       
-      // Show success message
+      // Send notification to the user who created the leave
+      if (notificationToken) {
+        try {
+          await sendNotification(
+            notificationToken,
+            'Leave Request Submitted',
+            `Your leave request for ${formData.leaveType} has been submitted successfully`
+          );
+        } catch (notificationError) {
+          console.error('Failed to send notification:', notificationError);
+          // Don't block the form submission if notification fails
+        }
+      }
+
       toast.success('Leave request submitted successfully!');
-      
-      // Reset form
       setFormData(initialFormData);
       setFile(null);
       
-      // Reset file input
       const fileInput = document.getElementById('documents') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Use setTimeout to ensure the toast is shown before navigation
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
       
-    } catch (err: unknown) {
-      // console.error('Failed to create leave:', err);
-      console.log(maxConsecutiveDaysError);
-      // Handle validation errors from the backend
+    } catch (err) {
       if (err && typeof err === 'object' && 'validationErrors' in err) {
         const errorObj = err as { validationErrors: Record<string, string> };
         setValidationErrors(errorObj.validationErrors);
@@ -356,7 +372,8 @@ const LeaveApplication = () => {
                     <option value="PTO">Personal Time Off (PTO)</option>
                     <option value="SICK">Sick Leave</option>
                     <option value="COMPASSIONATE">Compassionate Leave</option>
-                    <option value="MATERNITY">Maternity Leave</option>
+                    {user?.gender === 'FEMALE' && <option value="MATERNITY">Maternity Leave</option>}
+                    {user?.gender === 'MALE' && <option value="PATERNITY">Paternity Leave</option>}
                     <option value="UNPAID">Unpaid Leave</option>
                   </Form.Select>
                   <Form.Control.Feedback type="invalid">
@@ -461,7 +478,9 @@ const LeaveApplication = () => {
             <div className="mb-4">
               <h5 className="mb-3" style={{ color: '#184C55' }}>Reason for Leave</h5>
               <Form.Group className="mb-3">
-                <Form.Label htmlFor="reason" className="fw-medium" style={{ color: '#184C55' }}>Please provide details</Form.Label>
+                <Form.Label htmlFor="reason" className="fw-medium" style={{ color: '#184C55' }}>
+                  Please provide details <span className="text-muted">(Optional)</span>
+                </Form.Label>
                 <Form.Control
                   as="textarea"
                   id="reason"
@@ -469,7 +488,7 @@ const LeaveApplication = () => {
                   rows={4}
                   value={formData.reason}
                   onChange={handleInputChange}
-                  required
+                  required={false}
                   isInvalid={hasError('reason')}
                   placeholder="Please provide a detailed reason for your leave request..."
                   className="form-control-lg border-2"
@@ -485,7 +504,7 @@ const LeaveApplication = () => {
               <h5 className="mb-3" style={{ color: '#184C55' }}>Supporting Documents</h5>
               <Form.Group className="mb-3">
                 <Form.Label htmlFor="documents" className="fw-medium" style={{ color: '#184C55' }}>
-                  Supporting Document <span className="text-muted">(Optional)</span>
+                  Supporting Document {formData.leaveType === 'PTO' ? <span className="text-muted">(Optional)</span> : null}
                 </Form.Label>
                 <Form.Control
                   type="file"
@@ -502,7 +521,9 @@ const LeaveApplication = () => {
                 </Form.Control.Feedback>
                 <Form.Text id="documentHelp" className="text-muted d-flex align-items-center mt-2">
                   <i className="fas fa-info-circle me-1"></i>
-                  Optional: Upload medical certificates or other supporting documents.
+                  {formData.leaveType === 'PTO' 
+                    ? 'Optional: Upload any supporting documents if needed.'
+                    : 'Upload medical certificates or other supporting documents.'}
                   <br />
                   Accepted formats: PDF, DOC, DOCX, JPG, PNG
                 </Form.Text>

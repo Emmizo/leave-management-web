@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../context/store';
 import { loginUser, loginWithMicrosoft, handleMicrosoftCallback } from '../context/authSlice';
 import { toast } from 'react-toastify';
+import PasswordInput from '../components/common/PasswordInput';
 
 interface LoginFormData {
   username: string;
@@ -135,23 +136,15 @@ const Login = () => {
             </div>
 
             {/* Password Field */}
-            <div className="mb-4">
-              <label htmlFor="password" className="form-label text-dark">
-                Password
-              </label>
-              <input
-                type="password"
-                className="form-control form-control-lg py-2"
-                id="password"
-                name="password"
-                value={password}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                placeholder="Enter your password"
-                style={{ borderRadius: '8px' }}
-              />
-            </div>
+            <PasswordInput
+              label="Password"
+              name="password"
+              value={password}
+              onChange={handleInputChange}
+              placeholder="Enter your password"
+              required
+              disabled={isLoading}
+            />
 
             {/* Remember Me Checkbox */}
             <div className="mb-3">

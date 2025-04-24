@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaKey, FaUsers } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaHistory, FaUser, FaSignOutAlt, FaBars, FaTimes, FaKey, FaUsers, FaBell } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../context/authSlice';
 import { AppDispatch, RootState } from '../../context/store';
 import ChangePasswordModal from '../dashboard/ChangePasswordModal';
 import { Dropdown } from 'react-bootstrap';
 import './MainLayout.css';
+import { setNotificationCallback } from '../../services/notificationService';
 
 interface MenuItem {
   path: string;
@@ -19,9 +20,10 @@ const MainLayout = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const navigate = useNavigate();
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Handle window resize
   useEffect(() => {
@@ -35,6 +37,13 @@ const MainLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    // Set up notification callback
+    setNotificationCallback((count: number) => {
+      setNotificationCount(count);
+    });
+  }, []);
+
   // Check if user is admin or HR
   const isAdminOrHR = user?.user?.role === 'ADMIN' || user?.user?.role === 'HR_MANAGER';
 
@@ -46,13 +55,11 @@ const MainLayout = () => {
     { path: '/team-calendar', icon: <FaCalendarAlt />, label: 'Team Calendar' },
     { path: '/leave-policies', icon: <FaCalendarAlt />, label: 'Leave Policies' },
     { path: '/profile', icon: <FaUser />, label: 'Profile' },
-   
   ];
 
   // Admin/HR only menu items
   const adminMenuItems: MenuItem[] = [
     { path: '/manage-employees', icon: <FaUsers />, label: 'Manage Employees' },
-    // Add other Admin/HR specific items here if needed
   ];
 
   // Combine menu items based on user role
@@ -62,6 +69,7 @@ const MainLayout = () => {
 
   const handleLogout = () => {
     dispatch(logout());
+    navigate('/login');
   };
 
   // Handle sidebar toggle
@@ -74,6 +82,11 @@ const MainLayout = () => {
     if (isMobile) {
       setSidebarOpen(false);
     }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = () => {
+    // Here you can add logic to mark notifications as read
   };
 
   return (
@@ -182,55 +195,67 @@ const MainLayout = () => {
               </span>
               <small className="text-muted">{user?.position || 'Position'}</small>
             </div>
+            <div className="position-relative me-3">
+              <button
+                className="btn btn-link text-dark p-0 position-relative"
+                onClick={handleNotificationClick}
+                style={{ fontSize: '1.25rem' }}
+              >
+                <FaBell />
+                {notificationCount > 0 && (
+                  <span
+                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                    style={{ 
+                      fontSize: '0.6rem',
+                      border: '2px solid white',
+                      padding: '4px 6px'
+                    }}
+                  >
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+            </div>
             <Dropdown align="end">
               <Dropdown.Toggle 
                 variant="link" 
                 id="dropdown-profile" 
-                className="p-0 border-0 shadow-none d-flex align-items-center no-caret"
+                className="p-0 border-0 shadow-none d-flex align-items-center no-caret position-relative"
               >
                 {user?.profilePicture ? (
-                  <img 
-                    src={user.profilePicture} 
-                    alt="Profile" 
-                    className="rounded-circle" 
+                  <div className="position-relative">
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="rounded-circle" 
+                      style={{ 
+                        width: isMobile ? '35px' : '45px', 
+                        height: isMobile ? '35px' : '45px', 
+                        objectFit: 'cover', 
+                        border: '2px solid #184C55',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div 
+                    className="rounded-circle d-flex align-items-center justify-content-center position-relative"
                     style={{ 
                       width: isMobile ? '35px' : '45px', 
                       height: isMobile ? '35px' : '45px', 
-                      objectFit: 'cover', 
-                      border: '2px solid #184C55',
-                      cursor: 'pointer'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    className="rounded-circle d-flex align-items-center justify-content-center"
-                    style={{ 
-                      width: isMobile ? '35px' : '45px', 
-                      height: isMobile ? '35px' : '45px',
                       backgroundColor: '#184C55',
-                      cursor: 'pointer'
+                      color: 'white'
                     }}
                   >
-                    <FaUser size={isMobile ? 20 : 25} color="#ffffff" />
+                    <FaUser size={isMobile ? 16 : 20} />
                   </div>
                 )}
               </Dropdown.Toggle>
-
-              <Dropdown.Menu style={{ minWidth: '200px' }}>
-                <Dropdown.Item as={Link} to="/profile">
-                  <FaUser className="me-2" /> Profile
-                </Dropdown.Item>
+              <Dropdown.Menu>
                 <Dropdown.Item onClick={() => setShowChangePassword(true)}>
                   <FaKey className="me-2" /> Change Password
                 </Dropdown.Item>
                 <Dropdown.Divider />
-                <Dropdown.Item 
-                  onClick={() => {
-                    dispatch(logout());
-                    navigate('/login');
-                  }}
-                  className="text-danger"
-                >
+                <Dropdown.Item onClick={handleLogout}>
                   <FaSignOutAlt className="me-2" /> Logout
                 </Dropdown.Item>
               </Dropdown.Menu>

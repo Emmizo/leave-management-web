@@ -64,6 +64,7 @@ const ManageEmployees: React.FC = () => {
             <th>Name</th>
             <th>Email</th>
             <th>Position</th>
+            <th>Gender</th>
             <th>Status</th>
             {isAdminOrHR && <th>Actions</th>}
           </tr>
@@ -75,6 +76,7 @@ const ManageEmployees: React.FC = () => {
                 <td>{`${employee.firstName} ${employee.lastName}`}</td>
                 <td>{employee.email}</td>
                 <td>{employee.position}</td>
+                <td>{employee.gender}</td>
                 <td>
                   <Badge bg={employee.user.enabled ? 'success' : 'danger'}>
                     {employee.user.enabled ? 'Enabled' : 'Disabled'}

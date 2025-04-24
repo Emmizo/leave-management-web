@@ -88,10 +88,10 @@ const LeavePolicies: React.FC = () => {
         finalValue = value;
       }
 
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
         [name]: finalValue,
-      }));
+    }));
     }
   };
 
@@ -293,8 +293,32 @@ const LeavePolicies: React.FC = () => {
                   </tbody>
                 </Table>
               ) : (
-                <div className="text-center py-4">
-                  No leave policies found
+                <div className="text-center py-5">
+                  <img 
+                    src="/ist-logo.png" 
+                    alt="No Policies" 
+                    style={{ 
+                      width: '80px', 
+                      height: '80px', 
+                      opacity: 0.5,
+                      marginBottom: '1rem' 
+                    }} 
+                  />
+                  <h4 style={{ color: '#184C55', marginBottom: '1rem' }}>No Leave Policies Found</h4>
+                  <p className="text-muted mb-4">
+                    There are currently no leave policies configured in the system.
+                    {isAdminOrHR && " Click the 'Add New Policy' button to create one."}
+                  </p>
+                  {isAdminOrHR && (
+                    <Button 
+                      variant="primary" 
+                      onClick={handleAddNew}
+                      style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
+                      className="d-inline-flex align-items-center"
+                    >
+                      <FaPlus className="me-2" /> Add New Policy
+                    </Button>
+                  )}
                 </div>
               )}
             </Card.Body>
@@ -421,6 +445,7 @@ const LeavePolicies: React.FC = () => {
                         <option value="SICK">Sick Leave</option>
                         <option value="COMPASSIONATE">Compassionate Leave</option>
                         <option value="MATERNITY">Maternity Leave</option>
+                        <option value="PATERNITY">Paternity Leave</option>
                         <option value="UNPAID">Unpaid Leave</option>
                       </Form.Select>
                     </Form.Group>

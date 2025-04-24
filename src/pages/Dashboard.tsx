@@ -342,18 +342,32 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="col-12">
-            <div className="d-flex gap-3">
+            <div className="row g-3">
               {balances
-                .filter(balance => balance.daysAvailable > 0)
+                .filter(balance => {
+                  // Filter out maternity leave for male users
+                  if (currentUser?.gender === 'MALE' && balance.leaveType === 'MATERNITY') {
+                   console.log(balance.leaveType+' and user gender is '+currentUser?.gender)
+                    return false;
+                  }
+                  // Filter out paternity leave for female users
+                  if (currentUser?.gender === 'FEMALE' && balance.leaveType === 'PATERNITY') {
+                    return false;
+                  }
+                  if ( balance.leaveType === 'UNPAID') {
+                    return false;
+                  }
+                  return balance.daysAvailable > 0;
+                })
                 .map((balance) => (
-                  <div key={balance.leaveType} className="flex-grow-1">
+                  <div key={balance.leaveType} className="col-12 col-sm-6 col-md-4 col-lg-3">
                     <div className="card shadow-sm h-100" style={{ 
                       backgroundColor: balance.colorCode, 
                       color: '#fff',
                       minHeight: '120px'
                     }}>
                       <div className="card-body d-flex flex-column justify-content-center p-3">
-                        <h6 className="card-title mb-2">{balance.name}</h6>
+                        <h6 className="card-title mb-2 text-truncate">{balance.name}</h6>
                         <div className="text-center">
                           <h3 className="mb-0">{balance.daysAvailable}</h3>
                           <div className="small opacity-75">
@@ -370,13 +384,13 @@ const Dashboard = () => {
       </div>
 
       <div className="row">
-        <div className="col-md-8">
+        <div className="col-12 col-lg-8">
           <div className="card shadow-sm mb-4">
             <div className="card-header py-2" style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #184C55' }}>
               <h6 className="mb-0 d-flex align-items-center" style={{ color: '#184C55' }}>
                 {activityIcon}
-                <span className="fw-bold">{activityTitle}</span>
-                <span className="ms-2 badge rounded-pill" style={{ backgroundColor: '#184C55', fontSize: '0.65em' }}>
+                <span className="fw-bold text-truncate">{activityTitle}</span>
+                <span className="ms-2 badge rounded-pill d-none d-sm-inline-block" style={{ backgroundColor: '#184C55', fontSize: '0.65em' }}>
                   {relevantLeaves.length} Records
                 </span>
               </h6>
@@ -401,17 +415,17 @@ const Dashboard = () => {
                     <thead style={{ borderBottom: '1px solid #dee2e6' }}>
                       <tr className="align-middle small">
                         {isAdminOrHR && (
-                          <th className="px-2 py-2 fw-bold">
+                          <th className="px-2 py-2 fw-bold d-none d-md-table-cell">
                             Employee
                           </th>
                         )}
                         <th className="px-2 py-2 fw-bold">
                           Type
                         </th>
-                        <th className="px-2 py-2 fw-bold">
+                        <th className="px-2 py-2 fw-bold d-none d-sm-table-cell">
                           Start
                         </th>
-                        <th className="px-2 py-2 fw-bold">
+                        <th className="px-2 py-2 fw-bold d-none d-sm-table-cell">
                           End
                         </th>
                         <th className="px-2 py-2 fw-bold">
@@ -430,7 +444,7 @@ const Dashboard = () => {
                         relevantLeaves.map((leave) => (
                           <tr key={leave.id} className="align-middle small">
                             {isAdminOrHR && (
-                              <td className="px-2 py-2 fw-medium">
+                              <td className="px-2 py-2 fw-medium d-none d-md-table-cell text-truncate">
                                 {leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'N/A'}
                               </td>
                             )}
@@ -445,10 +459,10 @@ const Dashboard = () => {
                                 {leave.type}
                               </Badge>
                             </td>
-                            <td className="px-2 py-2 text-secondary">
+                            <td className="px-2 py-2 text-secondary d-none d-sm-table-cell">
                               {formatDate(leave.startDate)}
                             </td>
-                            <td className="px-2 py-2 text-secondary">
+                            <td className="px-2 py-2 text-secondary d-none d-sm-table-cell">
                               {formatDate(leave.endDate)}
                             </td>
                             <td className="px-2 py-2">
@@ -526,7 +540,7 @@ const Dashboard = () => {
           {/* Monthly Leave Trend Chart */}
           <div className="card shadow-sm mb-4">
             <div className="card-header">
-              <h5 className="mb-0" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Leave Analytics</h5>
+              <h5 className="mb-0 text-truncate" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Leave Analytics</h5>
             </div>
             <div className="card-body">
               {fetchHistoryStatus === 'loading' ? (
@@ -538,7 +552,7 @@ const Dashboard = () => {
               ) : fetchHistoryError ? (
                 <div className="alert alert-danger">Error loading chart data: {fetchHistoryError}</div>
               ) : (
-                <div style={{ height: '300px' }}>
+                <div style={{ height: '300px', minHeight: '250px' }}>
                   <Bar options={barOptions} data={getMonthlyLeaveTrend()} />
                 </div>
               )}
@@ -546,10 +560,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="col-md-4">
+        <div className="col-12 col-lg-4">
           <div className="card shadow-sm mb-4">
             <div className="card-header d-flex justify-content-between align-items-center">
-              <h6 className="mb-0" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Upcoming Holidays</h6>
+              <h6 className="mb-0 text-truncate" style={{ color: '#184C55' }}><FaCalendarAlt className="me-2" />Upcoming Holidays</h6>
               <div className="d-flex gap-2">
                 {isAdminOrHR && (
                   <Button variant="outline-success" size="sm" onClick={openHolidayModal} className="me-2">
@@ -578,7 +592,7 @@ const Dashboard = () => {
                     <ul className="list-group list-group-flush">
                       {upcomingHolidays.map((holiday) => (
                         <li key={holiday.id} className="list-group-item d-flex justify-content-between align-items-center">
-                          <div>
+                          <div className="text-truncate">
                             <div className="fw-medium">{holiday.name}</div>
                             <small className="text-muted">{formatDate(holiday.date)}</small>
                           </div>
@@ -589,7 +603,7 @@ const Dashboard = () => {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-muted mb-0">No upcoming holidays in the next 30 days.</p>
+                    <p className="text-muted mb-0">No upcoming holidays.</p>
                   )}
                 </>
               )}
@@ -599,7 +613,7 @@ const Dashboard = () => {
           {/* Leave Type Distribution Chart */}
           <div className="card shadow-sm">
             <div className="card-header">
-              <h6 className="mb-0" style={{ color: '#184C55' }}><FaUserFriends className="me-2" />Leave Distribution</h6>
+              <h6 className="mb-0 text-truncate" style={{ color: '#184C55' }}><FaUserFriends className="me-2" />Leave Distribution</h6>
             </div>
             <div className="card-body">
               {fetchHistoryStatus === 'loading' ? (
@@ -611,7 +625,7 @@ const Dashboard = () => {
               ) : fetchHistoryError ? (
                 <div className="alert alert-danger">Error loading chart data: {fetchHistoryError}</div>
               ) : (
-                <div style={{ height: '300px' }}>
+                <div style={{ height: '300px', minHeight: '250px' }}>
                   <Pie options={pieOptions} data={getLeaveTypeDistribution()} />
                 </div>
               )}

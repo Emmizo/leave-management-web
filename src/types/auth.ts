@@ -33,6 +33,7 @@ export interface Employee {
   profilePicture?: string | null;
   user: UserRole;
   leaves: Leave[] | null;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
 }
 
 export interface LoginResponse {

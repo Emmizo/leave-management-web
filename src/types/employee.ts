@@ -15,6 +15,7 @@ export interface RegisterEmployeePayload {
   department: string;
   position: string;
   role: 'HR_MANAGER' | 'ADMIN' | 'STAFF';
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
 }
 
 // Assuming the API might return the created Employee object
@@ -42,6 +43,7 @@ export interface Employee {
   department: string;
   position: string;
   phone: string | null;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
   annualLeaveBalance?: number; // Optional based on response
   microsoftId?: string | null; // Optional based on response
   user: User;

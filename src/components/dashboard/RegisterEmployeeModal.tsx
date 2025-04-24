@@ -22,6 +22,7 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
     department: '',
     position: '',
     role: 'STAFF',
+    gender: 'MALE'
   };
   const [formData, setFormData] = useState<RegisterEmployeePayload>(initialFormData);
 
@@ -195,23 +196,46 @@ const RegisterEmployeeModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 </Col>
               </Row>
 
-              <Form.Group className="mb-3" controlId="formRole">
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formRole">
+                    <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
+                      Role <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                      required
+                      className="form-select-lg border-2"
+                      style={{ borderColor: '#184C55' }}
+                    >
+                      <option value="STAFF">Staff</option>
+                      <option value="HR_MANAGER">HR Manager</option>
+                      <option value="ADMIN">Admin</option>
+                    </Form.Select>
+                  </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                  <Form.Group className="mb-3" controlId="formGender">
                 <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                  Role <span className="text-danger">*</span>
+                  Gender <span className="text-danger">*</span>
                 </Form.Label>
                 <Form.Select
-                  name="role"
-                  value={formData.role}
+                  name="gender"
+                  value={formData.gender}
                   onChange={handleInputChange}
                   required
                   className="form-select-lg border-2"
                   style={{ borderColor: '#184C55' }}
                 >
-                  <option value="STAFF">Staff</option>
-                  <option value="HR_MANAGER">HR Manager</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
                 </Form.Select>
               </Form.Group>
+                </Col>
+              </Row>
             </div>
 
             <small className="text-muted d-block mb-4">

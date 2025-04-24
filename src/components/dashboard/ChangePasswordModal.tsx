@@ -3,6 +3,7 @@ import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../context/store';
 import { changePassword } from '../../context/authSlice';
+import PasswordInput from '../common/PasswordInput';
 
 interface Props {
   isOpen: boolean;
@@ -103,56 +104,33 @@ const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose }) => {
           )}
 
           <fieldset disabled={status === 'loading'}>
-            <Form.Group className="mb-4" controlId="formCurrentPassword">
-              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                Current Password <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handleInputChange}
-                placeholder="Enter current password"
-                required
-                className="form-control-lg border-2"
-                style={{ borderColor: '#184C55' }}
-              />
-            </Form.Group>
+            <PasswordInput
+              label="Current Password"
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleInputChange}
+              placeholder="Enter current password"
+              required
+            />
 
-            <Form.Group className="mb-4" controlId="formNewPassword">
-              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                New Password <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleInputChange}
-                placeholder="Enter new password"
-                required
-                className="form-control-lg border-2"
-                style={{ borderColor: '#184C55' }}
-              />
-              <Form.Text className="text-muted">
-                Password must be at least 8 characters long
-              </Form.Text>
-            </Form.Group>
+            <PasswordInput
+              label="New Password"
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleInputChange}
+              placeholder="Enter new password"
+              required
+              helpText="Password must be at least 8 characters long"
+            />
 
-            <Form.Group className="mb-4" controlId="formConfirmPassword">
-              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                Confirm New Password <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="Confirm new password"
-                required
-                className="form-control-lg border-2"
-                style={{ borderColor: '#184C55' }}
-              />
-            </Form.Group>
+            <PasswordInput
+              label="Confirm New Password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              placeholder="Confirm new password"
+              required
+            />
           </fieldset>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">

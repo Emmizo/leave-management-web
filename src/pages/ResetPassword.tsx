@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { AppDispatch, RootState } from '../context/store';
 import { resetPassword } from '../context/passwordResetSlice';
 import { FaLock } from 'react-icons/fa';
+import PasswordInput from '../components/common/PasswordInput';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -88,40 +89,26 @@ const ResetPassword = () => {
           )}
 
           <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3" controlId="newPassword">
-              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                New Password <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleInputChange}
-                placeholder="Enter new password"
-                required
-                className="form-control-lg"
-                style={{ borderColor: '#184C55' }}
-              />
-              <Form.Text className="text-muted">
-                Password must be at least 8 characters long
-              </Form.Text>
-            </Form.Group>
+            <PasswordInput
+              label="New Password"
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleInputChange}
+              placeholder="Enter new password"
+              required
+              helpText="Password must be at least 8 characters long"
+              error={validationError || undefined}
+            />
 
-            <Form.Group className="mb-4" controlId="confirmPassword">
-              <Form.Label className="fw-medium" style={{ color: '#184C55' }}>
-                Confirm Password <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Control
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="Confirm new password"
-                required
-                className="form-control-lg"
-                style={{ borderColor: '#184C55' }}
-              />
-            </Form.Group>
+            <PasswordInput
+              label="Confirm Password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              placeholder="Confirm new password"
+              required
+              error={validationError || undefined}
+            />
 
             <Button
               type="submit"

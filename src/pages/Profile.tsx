@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaPencilAlt } from 'react-icons/fa';
+import { 
+  FaUser, 
+  FaEnvelope, 
+  FaPhone, 
+  FaBuilding, 
+  FaCalendarAlt, 
+  FaEdit, 
+  FaSave, 
+  FaTimes, 
+  FaPencilAlt, 
+  FaBell,
+  FaVenusMars 
+} from 'react-icons/fa';
 import { RootState, AppDispatch } from '../context/store';
 import { fetchLeaveBalances } from '../context/leaveSlice';
 import { updateProfile, updateProfilePicture } from '../context/authSlice';
@@ -22,6 +34,7 @@ const Profile = () => {
     phone: '',
     department: '',
     position: '',
+    gender: 'MALE' as 'MALE' | 'FEMALE' | 'OTHER'
   });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
@@ -29,6 +42,8 @@ const Profile = () => {
   // State for cropper modal
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [showCropperModal, setShowCropperModal] = useState(false);
+
+  const [hasNotifications, setHasNotifications] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -40,6 +55,7 @@ const Profile = () => {
         phone: user.phone || '(Not Provided)',
         department: user.department || '',
         position: user.position || '',
+        gender: user.gender || 'MALE'
       });
       setPreviewImage(user.profilePicture || null);
     }
@@ -49,7 +65,7 @@ const Profile = () => {
     dispatch(fetchLeaveBalances());
   }, [dispatch]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -124,6 +140,7 @@ const Profile = () => {
         phone: user.phone || '(Not Provided)',
         department: user.department || '',
         position: user.position || '',
+        gender: user.gender || 'MALE'
       });
       setPreviewImage(user.profilePicture || null);
     }
@@ -159,6 +176,30 @@ const Profile = () => {
                       className="rounded-circle mx-auto" 
                       style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #184C55' }}
                     />
+                    {/* Notification Badge */}
+                    {hasNotifications && (
+                      <div
+                        className="position-absolute d-flex align-items-center justify-content-center"
+                        style={{ 
+                          top: '0',  
+                          right: '0',   
+                          width: '24px',
+                          height: '24px',
+                          backgroundColor: '#dc3545',
+                          borderRadius: '50%',
+                          color: 'white',
+                          zIndex: 10,
+                          border: '2px solid white',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          // Handle notification click
+                          setHasNotifications(false);
+                        }}
+                      >
+                        <FaBell size={12} />
+                      </div>
+                    )}
                     <div
                       className="position-absolute d-flex align-items-center justify-content-center"
                       style={{ 
@@ -172,9 +213,9 @@ const Profile = () => {
                         cursor: 'pointer',
                         zIndex: 10, 
                         border: '2px solid white'
-                      }}
-                      onClick={triggerFileInput}
-                    >
+                        }}
+                        onClick={triggerFileInput}
+                      >
                       {isUploadingPicture ? (
                         <div className="spinner-border spinner-border-sm text-light" role="status">
                           <span className="visually-hidden">Loading...</span>
@@ -331,6 +372,24 @@ const Profile = () => {
                       />
                     </div>
                   </div>
+                  <div className="mb-3">
+                    <label htmlFor="gender" className="form-label fw-medium" style={{ color: '#184C55' }}>Gender</label>
+                    <div className="input-group">
+                      <span className="input-group-text" style={{ backgroundColor: '#f8f9fa', borderColor: '#184C55' }}>
+                        <FaVenusMars style={{ color: '#184C55' }} />
+                      </span>
+                      <select
+                        className="form-select"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                      >
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                  </div>
                   <div className="d-flex justify-content-center gap-2 mt-4">
                     <button type="submit" className="btn px-4" style={{ backgroundColor: '#184C55', color: '#FFFFFF' }}>
                       <FaSave className="me-1" /> Save
@@ -398,6 +457,16 @@ const Profile = () => {
                   <div>
                     <small className="text-muted d-block">Department</small>
                     <span>{formData.department}</span>
+                  </div>
+                </li>
+                <li className="mb-3 d-flex align-items-center">
+                  <div className="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                       style={{ width: '36px', height: '36px', backgroundColor: '#f8f9fa', color: '#184C55' }}>
+                    <FaVenusMars />
+                  </div>
+                  <div>
+                    <small className="text-muted d-block">Gender</small>
+                    <span>{formData.gender}</span>
                   </div>
                 </li>
                 <li className="d-flex align-items-center">

@@ -20,6 +20,7 @@
     "axios": "^1.8.4",
     "bootstrap": "^5.3.5",
     "chart.js": "^4.4.9",
+    "firebase": "^11.6.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
