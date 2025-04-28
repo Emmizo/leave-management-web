@@ -19,6 +19,8 @@ import { updateProfile, updateProfilePicture } from '../context/authSlice';
 import { toast } from 'react-toastify';
 import ImageCropperModal from '../components/profile/ImageCropperModal';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5456';
+
 const Profile = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user, status } = useSelector((state: RootState) => state.auth);
@@ -36,7 +38,7 @@ const Profile = () => {
     position: '',
     gender: 'MALE' as 'MALE' | 'FEMALE' | 'OTHER'
   });
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string>('');
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
 
   // State for cropper modal
@@ -57,13 +59,25 @@ const Profile = () => {
         position: user.position || '',
         gender: user.gender || 'MALE'
       });
-      setPreviewImage(user.profilePicture || null);
     }
   }, [user]);
 
   useEffect(() => {
     dispatch(fetchLeaveBalances());
   }, [dispatch]);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      if (user?.user?.profilePicture) {
+        const imageUrl = await fetchProfileImage(getProfileImageUrl(user.user.profilePicture));
+        setProfileImageUrl(imageUrl || '');
+        
+      } else {
+        setProfileImageUrl('');
+      }
+    };
+    loadImage();
+  }, [user?.user?.profilePicture]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -96,17 +110,18 @@ const Profile = () => {
     try {
       const formData = new FormData();
       // Append the blob directly, giving it a filename
-      formData.append('profilePicture', croppedImageBlob, 'profile_picture.jpg'); 
+      formData.append('file', croppedImageBlob, 'profile_picture.jpg'); 
 
       await dispatch(updateProfilePicture(formData)).unwrap();
       toast.success('Profile picture updated successfully!');
 
       // Update preview with a temporary URL from the blob
-      setPreviewImage(URL.createObjectURL(croppedImageBlob));
-      
-      // Close the modal (handled within the modal itself now)
-      // setShowCropperModal(false);
-      // setImageToCrop(null);
+      setProfileImageUrl(URL.createObjectURL(croppedImageBlob));
+
+      // Force a complete page refresh to update profile picture everywhere
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
 
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update profile picture');
@@ -142,13 +157,39 @@ const Profile = () => {
         position: user.position || '',
         gender: user.gender || 'MALE'
       });
-      setPreviewImage(user.profilePicture || null);
     }
     setIsEditing(true);
   };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  // Helper to get the correct backend image URL
+  const getProfileImageUrl = (profilePicture: string) => {
+    if (!profilePicture) return '';
+    if (/^https?:\/\//.test(profilePicture)) return profilePicture;
+    if (profilePicture.startsWith('/uploads/')) return `${BACKEND_URL}${profilePicture}`;
+    return `${BACKEND_URL}/uploads/${profilePicture.replace(/^\/+/, '')}`;
+  };
+
+  // Helper to fetch the image as a blob with auth
+  const fetchProfileImage = async (url: string) => {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching profile image:', error);
+      return null;
+    }
   };
 
   if (status === 'loading' && !user) { // Added check for !user to avoid flicker
@@ -167,96 +208,69 @@ const Profile = () => {
         <div className="col-md-4">
           <div className="card mb-4 shadow-sm">
             <div className="card-body text-center">
-              <div className="mb-3 position-relative">
-                {previewImage ? (
-                  <div className="position-relative">
-                    <img 
-                      src={previewImage} 
-                      alt="Profile" 
-                      className="rounded-circle mx-auto" 
-                      style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #184C55' }}
-                    />
-                    {/* Notification Badge */}
-                    {hasNotifications && (
-                      <div
-                        className="position-absolute d-flex align-items-center justify-content-center"
-                        style={{ 
-                          top: '0',  
-                          right: '0',   
-                          width: '24px',
-                          height: '24px',
-                          backgroundColor: '#dc3545',
-                          borderRadius: '50%',
-                          color: 'white',
-                          zIndex: 10,
-                          border: '2px solid white',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => {
-                          // Handle notification click
-                          setHasNotifications(false);
-                        }}
-                      >
-                        <FaBell size={12} />
-                      </div>
-                    )}
-                    <div
-                      className="position-absolute d-flex align-items-center justify-content-center"
-                      style={{ 
-                        bottom: '5px',  
-                        right: '5px',   
-                        width: '32px',
-                        height: '32px',
-                        backgroundColor: '#184C55',
-                        borderRadius: '50%',
-                        color: 'white',
-                        cursor: 'pointer',
-                        zIndex: 10, 
-                        border: '2px solid white'
-                        }}
-                        onClick={triggerFileInput}
-                      >
-                      {isUploadingPicture ? (
-                        <div className="spinner-border spinner-border-sm text-light" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      ) : (
-                        <FaPencilAlt size={16} />
-                      )}
-                    </div>
-                  </div>
+              <div className="mb-3 position-relative" style={{ width: '120px', height: '120px', margin: '0 auto' }}>
+                {profileImageUrl ? (
+                  <img 
+                    src={profileImageUrl} 
+                    alt="Profile" 
+                    className="rounded-circle mx-auto" 
+                    style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #184C55' }}
+                  />
                 ) : (
                   <div 
-                    className="rounded-circle d-flex align-items-center justify-content-center mx-auto position-relative"
+                    className="rounded-circle d-flex align-items-center justify-content-center mx-auto"
                     style={{ width: '120px', height: '120px', backgroundColor: '#184C55', color: '#FFFFFF', border: '3px solid #184C55' }}
                   >
                     <FaUser size={50} />
-                    <div 
-                      className="position-absolute d-flex align-items-center justify-content-center" 
-                      style={{ 
-                        bottom: '5px',  
-                        right: '5px',   
-                        width: '32px', 
-                        height: '32px', 
-                        backgroundColor: '#184C55', 
-                        borderRadius: '50%', 
-                        color: 'white',  
-                        cursor: 'pointer',
-                        zIndex: 10, 
-                        border: '2px solid white' 
-                      }}
-                      onClick={triggerFileInput}
-                    >
-                      {isUploadingPicture ? ( // Show spinner here too if needed during upload
-                        <div className="spinner-border spinner-border-sm text-light" role="status"> 
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                       ) : (
-                        <FaPencilAlt size={16} />
-                       )}
-                    </div>
                   </div>
                 )}
+                {/* Notification Badge */}
+                {hasNotifications && (
+                  <div
+                    className="position-absolute d-flex align-items-center justify-content-center"
+                    style={{ 
+                      top: '0',  
+                      right: '0',   
+                      width: '24px',
+                      height: '24px',
+                      backgroundColor: '#dc3545',
+                      borderRadius: '50%',
+                      color: 'white',
+                      zIndex: 10,
+                      border: '2px solid white',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setHasNotifications(false);
+                    }}
+                  >
+                    <FaBell size={12} />
+                  </div>
+                )}
+                <div
+                  className="position-absolute d-flex align-items-center justify-content-center"
+                  style={{ 
+                    bottom: '5px',  
+                    right: '5px',   
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#184C55',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    zIndex: 10, 
+                    border: '2px solid white'
+                  }}
+                  onClick={triggerFileInput}
+                >
+                  {isUploadingPicture ? (
+                    <div className="spinner-border spinner-border-sm text-light" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  ) : (
+                    <FaPencilAlt size={16} />
+                  )}
+                </div>
                 <input 
                   type="file" 
                   ref={fileInputRef}

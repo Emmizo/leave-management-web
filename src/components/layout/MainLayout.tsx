@@ -8,6 +8,15 @@ import ChangePasswordModal from '../dashboard/ChangePasswordModal';
 import { Dropdown } from 'react-bootstrap';
 import './MainLayout.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5456';
+
+const getProfileImageUrl = (profilePicture: string) => {
+  if (!profilePicture) return '';
+  if (/^https?:\/\//.test(profilePicture)) return profilePicture;
+  if (profilePicture.startsWith('/uploads/')) return `${BACKEND_URL}${profilePicture}`;
+  return `${BACKEND_URL}/uploads/${profilePicture.replace(/^\/+/, '')}`;
+};
+
 // First, create a function to fetch the image with proper headers
 const fetchProfileImage = async (url: string) => {
   try {
@@ -47,7 +56,8 @@ const MainLayout = () => {
   useEffect(() => {
     const loadImage = async () => {
       if (user?.user?.profilePicture) {
-        const imageUrl = await fetchProfileImage(user.user.profilePicture.replace(/\s+/g, ''));
+        const imageUrl = await fetchProfileImage(getProfileImageUrl(user.user.profilePicture));
+       
         setProfileImageUrl(imageUrl || '');
       }
     };
@@ -68,7 +78,7 @@ const MainLayout = () => {
 
   // Check if user is admin or HR
   const isAdminOrHR = user?.user?.role === 'ADMIN' || user?.user?.role === 'HR_MANAGER';
-console.log("user?.profilePicture"+user?.user);
+console.log("user?.profilePicture"+user?.profilePicture);
   // Base menu items that all users can see
   const baseMenuItems: MenuItem[] = [
     { path: '/dashboard', icon: <FaHome />, label: 'Dashboard' },

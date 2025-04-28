@@ -178,13 +178,13 @@ const Holidays: React.FC = () => {
     }
   };
 
-  if (!isAdminOrHR) {
+  /* if (!isAdminOrHR) {
     return (
       <Container className="py-4">
         <Alert variant="danger">Access Denied: You do not have permission to manage holidays.</Alert>
       </Container>
     );
-  }
+  } */
 
   return (
     <Container className="py-4">
@@ -194,12 +194,14 @@ const Holidays: React.FC = () => {
         </Col>
         <Col xs="auto">
           <div className="d-flex gap-2">
+            {isAdminOrHR && (
             <Button
               style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
               onClick={() => handleOpenModal()}
             >
               <FaPlus className="me-2" /> Add New Holiday
             </Button>
+            )}
             <div className="btn-group">
               <Button
                 variant={viewMode === 'calendar' ? 'primary' : 'outline-primary'}
@@ -239,17 +241,20 @@ const Holidays: React.FC = () => {
       {error && <Alert variant="danger">Error loading holidays: {error}</Alert>}
 
       {loading === 'succeeded' && holidays.length === 0 && (
+        
         <Card className="shadow-sm">
           <Card.Body className="text-center py-5">
             <FaPlus className="text-muted mb-3" style={{ fontSize: '3rem' }}/>
             <h4>No Holidays Found</h4>
             <p className="text-muted">Get started by adding the first holiday.</p>
+            {isAdminOrHR && (
             <Button 
               style={{ backgroundColor: '#184C55', borderColor: '#184C55' }}
               onClick={() => handleOpenModal()}
             >
               <FaPlus className="me-2" /> Add Holiday
             </Button>
+            )}
           </Card.Body>
         </Card>
       )}
@@ -312,7 +317,9 @@ const Holidays: React.FC = () => {
                     <th className="py-3 px-3 fw-bold">Name</th>
                     <th className="py-3 px-3 fw-bold">Date</th>
                     <th className="py-3 px-3 fw-bold">Type</th>
+                    {isAdminOrHR && (
                     <th className="py-3 px-3 fw-bold text-center">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -325,6 +332,7 @@ const Holidays: React.FC = () => {
                           {holiday.recurring ? 'Recurring' : 'One-time'}
                         </Badge>
                       </td>
+                      {isAdminOrHR && (
                       <td className="py-3 px-3 text-center">
                         <div className="d-flex gap-2 justify-content-center">
                           <Button
@@ -349,6 +357,7 @@ const Holidays: React.FC = () => {
                           </Button>
                         </div>
                       </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

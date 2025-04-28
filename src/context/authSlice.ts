@@ -9,7 +9,7 @@ export interface AuthState {
   user: Employee | null;
   token: string | null;
   isAuthenticated: boolean;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'succeeded' | 'failed'| '200';
   error: string | null;
 }
 

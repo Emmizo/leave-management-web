@@ -96,7 +96,7 @@ const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose }) => {
               {validationError}
             </Alert>
           )}
-          {status === 'succeeded' && (
+          {status === '200' && (
             <Alert variant="success" className="mb-4">
               <i className="fas fa-check-circle me-2"></i>
               Password changed successfully!
